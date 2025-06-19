@@ -1,0 +1,1937 @@
+{
+	"info": {
+		"_postman_id": "fd-api-collection-2025",
+		"name": "Football Dynasty API Collection",
+		"description": "Comprehensive collection for testing Football Dynasty backend endpoints and workflows",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "football-dynasty"
+	},
+	"item": [
+		{
+			"name": "Authentication Workflow",
+			"description": "Complete authentication flow including registration, login, token validation, and team selection",
+			"item": [
+				{
+					"name": "Test Backend Connectivity",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/auth/test",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"auth",
+								"test"
+							]
+						},
+						"description": "Test if backend is running and accessible"
+					},
+					"response": []
+				},
+				{
+					"name": "Register New User",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"{{test_username}}\",\n    \"email\": \"{{test_email}}\",\n    \"password\": \"{{test_password}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/register",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"auth",
+								"register"
+							]
+						},
+						"description": "Register a new user account"
+					},
+					"response": []
+				},
+				{
+					"name": "Login User",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const responseJson = pm.response.json();",
+									"    pm.environment.set('auth_token', responseJson.token);",
+									"    pm.environment.set('user_id', responseJson.user.id);",
+									"    console.log('Auth token saved:', responseJson.token);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"{{test_username}}\",\n    \"password\": \"{{test_password}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/login",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"auth",
+								"login"
+							]
+						},
+						"description": "Login and get JWT token"
+					},
+					"response": []
+				},
+				{
+					"name": "Validate Token",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/auth/validate",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"auth",
+								"validate"
+							]
+						},
+						"description": "Validate current JWT token"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Current User",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/auth/me",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"auth",
+								"me"
+							]
+						},
+						"description": "Get current authenticated user information"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Human Teams (for selection)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const teams = pm.response.json();",
+									"    if (teams.length > 0) {",
+									"        pm.environment.set('sample_team_id', teams[0].id);",
+									"        console.log('Sample team ID saved:', teams[0].id);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/teams/human",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"teams",
+								"human"
+							]
+						},
+						"description": "Get available human-controlled teams for selection"
+					},
+					"response": []
+				},
+				{
+					"name": "Select Team",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"teamId\": \"{{sample_team_id}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/select-team",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"auth",
+								"select-team"
+							]
+						},
+						"description": "Select a team for the user"
+					},
+					"response": []
+				},
+				{
+					"name": "Logout",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/auth/logout",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"auth",
+								"logout"
+							]
+						},
+						"description": "Logout user (client-side token removal)"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Team Management Workflow",
+			"description": "Complete team management including CRUD operations, search, and conference filtering",
+			"item": [
+				{
+					"name": "Get All Teams (Paginated)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/teams?page=0&size=20",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"teams"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "20"
+								}
+							]
+						},
+						"description": "Get all teams with pagination"
+					},
+					"response": []
+				},
+				{
+					"name": "Search Teams",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/teams?search=Alabama&page=0&size=10",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"teams"
+							],
+							"query": [
+								{
+									"key": "search",
+									"value": "Alabama"
+								},
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "10"
+								}
+							]
+						},
+						"description": "Search teams by name"
+					},
+					"response": []
+				},
+				{
+					"name": "Get All Conferences",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const conferences = pm.response.json();",
+									"    if (conferences.length > 0) {",
+									"        pm.environment.set('sample_conference', conferences[0]);",
+									"        console.log('Sample conference saved:', conferences[0]);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/teams/conferences",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"teams",
+								"conferences"
+							]
+						},
+						"description": "Get all unique conference names"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Teams by Conference",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/teams/conference/{{sample_conference}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"teams",
+								"conference",
+								"{{sample_conference}}"
+							]
+						},
+						"description": "Get all teams in a specific conference"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Team by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/teams/{{sample_team_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"teams",
+								"{{sample_team_id}}"
+							]
+						},
+						"description": "Get specific team by ID"
+					},
+					"response": []
+				},
+				{
+					"name": "Create New Team",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Test University\",\n    \"location\": \"Test City\",\n    \"conference\": \"Independent\",\n    \"isHuman\": false,\n    \"overallRating\": 75\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/teams",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"teams"
+							]
+						},
+						"description": "Create a new team"
+					},
+					"response": []
+				},
+				{
+					"name": "Update Team",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Updated Test University\",\n    \"location\": \"Updated City\",\n    \"conference\": \"Independent\",\n    \"isHuman\": false,\n    \"overallRating\": 80\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/teams/{{sample_team_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"teams",
+								"{{sample_team_id}}"
+							]
+						},
+						"description": "Update an existing team"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Game Management Workflow",
+			"description": "Complete game management including viewing schedules, results, and filtering by team/week",
+			"item": [
+				{
+					"name": "Get All Games (Current Year)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/games?page=0&size=20&year={{current_year}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"games"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "20"
+								},
+								{
+									"key": "year",
+									"value": "{{current_year}}"
+								}
+							]
+						},
+						"description": "Get all games for current year with pagination"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Games by Team",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/games/team/{{sample_team_id}}?year={{current_year}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"games",
+								"team",
+								"{{sample_team_id}}"
+							],
+							"query": [
+								{
+									"key": "year",
+									"value": "{{current_year}}"
+								}
+							]
+						},
+						"description": "Get all games for a specific team"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Upcoming Games (All)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/games/upcoming",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"games",
+								"upcoming"
+							]
+						},
+						"description": "Get all upcoming scheduled games"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Upcoming Games by Team",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/games/upcoming?teamId={{sample_team_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"games",
+								"upcoming"
+							],
+							"query": [
+								{
+									"key": "teamId",
+									"value": "{{sample_team_id}}"
+								}
+							]
+						},
+						"description": "Get upcoming games for a specific team"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Recent Games (All)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/games/recent?limit=10",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"games",
+								"recent"
+							],
+							"query": [
+								{
+									"key": "limit",
+									"value": "10"
+								}
+							]
+						},
+						"description": "Get recent completed games"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Recent Games by Team",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/games/recent?teamId={{sample_team_id}}&limit=5",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"games",
+								"recent"
+							],
+							"query": [
+								{
+									"key": "teamId",
+									"value": "{{sample_team_id}}"
+								},
+								{
+									"key": "limit",
+									"value": "5"
+								}
+							]
+						},
+						"description": "Get recent completed games for a specific team"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Games by Week",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"// Generate a sample week ID for testing",
+									"// In real scenarios, this would come from the weeks endpoint",
+									"pm.environment.set('sample_week_id', 'week-id-placeholder');"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/games/week/{{sample_week_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"games",
+								"week",
+								"{{sample_week_id}}"
+							]
+						},
+						"description": "Get all games for a specific week"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Game by ID",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"// This would be set from a previous games query",
+									"pm.environment.set('sample_game_id', 'game-id-placeholder');"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/games/{{sample_game_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"games",
+								"{{sample_game_id}}"
+							]
+						},
+						"description": "Get specific game by ID"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Standings Management Workflow",
+			"description": "Complete standings management including viewing, filtering, and calculations",
+			"item": [
+				{
+					"name": "Get All Standings",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/standings?page=0&size=25",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"standings"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "25"
+								}
+							]
+						},
+						"description": "Get all standings with pagination"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Standings by Year",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/standings?year={{current_year}}&page=0&size=25",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"standings"
+							],
+							"query": [
+								{
+									"key": "year",
+									"value": "{{current_year}}"
+								},
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "25"
+								}
+							]
+						},
+						"description": "Get standings for a specific year"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Standings by Conference and Year",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/standings?year={{current_year}}&conference={{sample_conference}}&page=0&size=25",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"standings"
+							],
+							"query": [
+								{
+									"key": "year",
+									"value": "{{current_year}}"
+								},
+								{
+									"key": "conference",
+									"value": "{{sample_conference}}"
+								},
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "25"
+								}
+							]
+						},
+						"description": "Get standings for a specific conference and year"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Conference Standings (Direct)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/standings/conference/{{sample_conference}}/year/{{current_year}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"standings",
+								"conference",
+								"{{sample_conference}}",
+								"year",
+								"{{current_year}}"
+							]
+						},
+						"description": "Get conference standings ordered by rank"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Top Ranked Teams",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/standings/ranked/year/{{current_year}}?limit=25",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"standings",
+								"ranked",
+								"year",
+								"{{current_year}}"
+							],
+							"query": [
+								{
+									"key": "limit",
+									"value": "25"
+								}
+							]
+						},
+						"description": "Get top ranked teams for a year"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Teams Receiving Votes",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/standings/votes/year/{{current_year}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"standings",
+								"votes",
+								"year",
+								"{{current_year}}"
+							]
+						},
+						"description": "Get teams receiving votes but not ranked"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Team Standings History",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/standings/team/{{sample_team_id}}?page=0&size=10",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"standings",
+								"team",
+								"{{sample_team_id}}"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "10"
+								}
+							]
+						},
+						"description": "Get all standings for a specific team across years"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Team Standing for Year",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/standings/team/{{sample_team_id}}/year/{{current_year}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"standings",
+								"team",
+								"{{sample_team_id}}",
+								"year",
+								"{{current_year}}"
+							]
+						},
+						"description": "Get specific team standing for a year"
+					},
+					"response": []
+				},
+				{
+					"name": "Calculate Standings for Year",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/standings/calculate/{{current_year}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"standings",
+								"calculate",
+								"{{current_year}}"
+							]
+						},
+						"description": "Trigger standings calculation for all conferences"
+					},
+					"response": []
+				},
+				{
+					"name": "Calculate Conference Standings",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/standings/calculate/conference/{{sample_conference}}/year/{{current_year}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"standings",
+								"calculate",
+								"conference",
+								"{{sample_conference}}",
+								"year",
+								"{{current_year}}"
+							]
+						},
+						"description": "Calculate standings for specific conference and year"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Conference Championship Workflow",
+			"description": "Conference championship analysis and standings",
+			"item": [
+				{
+					"name": "Get Championship Bid Analysis",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/conference-championship/bid/{{sample_team_id}}/{{current_year}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"conference-championship",
+								"bid",
+								"{{sample_team_id}}",
+								"{{current_year}}"
+							]
+						},
+						"description": "Get conference championship bid analysis for a team"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Conference Standings (Alt)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/conference-standings/{{sample_conference}}/{{current_year}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"conference-standings",
+								"{{sample_conference}}",
+								"{{current_year}}"
+							]
+						},
+						"description": "Get conference standings using conference-standings endpoint"
+					},
+					"response": []
+				},
+				{
+					"name": "Get All Conference Standings",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/conference-standings/all/{{current_year}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"conference-standings",
+								"all",
+								"{{current_year}}"
+							]
+						},
+						"description": "Get all conference standings grouped by conference"
+					},
+					"response": []
+				},
+				{
+					"name": "Calculate Conference Standings (Alt)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/conference-standings/calculate/{{current_year}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"conference-standings",
+								"calculate",
+								"{{current_year}}"
+							]
+						},
+						"description": "Calculate conference standings for all conferences"
+					},
+					"response": []
+				},
+				{
+					"name": "Calculate Specific Conference Standings",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/conference-standings/calculate/{{sample_conference}}/{{current_year}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"conference-standings",
+								"calculate",
+								"{{sample_conference}}",
+								"{{current_year}}"
+							]
+						},
+						"description": "Calculate standings for a specific conference"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Week Management Workflow",
+			"description": "Week and season progression management",
+			"item": [
+				{
+					"name": "Get Current Week",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const responseJson = pm.response.json();",
+									"    if (responseJson.weekId) {",
+									"        pm.environment.set('current_week_id', responseJson.weekId);",
+									"        pm.environment.set('current_week_number', responseJson.currentWeek);",
+									"        console.log('Current week saved:', responseJson.currentWeek);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/weeks/current",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"weeks",
+								"current"
+							]
+						},
+						"description": "Get current week information and season progress"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Weeks by Year",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/weeks/{{current_year}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"weeks",
+								"{{current_year}}"
+							]
+						},
+						"description": "Get all weeks for a specific year"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Specific Week",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/weeks/{{current_year}}/{{current_week_number}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"weeks",
+								"{{current_year}}",
+								"{{current_week_number}}"
+							]
+						},
+						"description": "Get a specific week by year and week number"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Admin & Development Workflow",
+			"description": "Administrative endpoints and development tools",
+			"item": [
+				{
+					"name": "Get Environment Info",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/admin/environment",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"admin",
+								"environment"
+							]
+						},
+						"description": "Get current environment configuration"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Database Stats",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/admin/stats",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"admin",
+								"stats"
+							]
+						},
+						"description": "Get basic database statistics"
+					},
+					"response": []
+				},
+				{
+					"name": "Get All Users",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/admin/users",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"admin",
+								"users"
+							]
+						},
+						"description": "Get all users (admin only)"
+					},
+					"response": []
+				},
+				{
+					"name": "Search Users",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/admin/users/search?username={{test_username}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"admin",
+								"users",
+								"search"
+							],
+							"query": [
+								{
+									"key": "username",
+									"value": "{{test_username}}"
+								}
+							]
+						},
+						"description": "Search users by username or email"
+					},
+					"response": []
+				},
+				{
+					"name": "Get User Credentials Info",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/admin/users/credentials/{{test_username}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"admin",
+								"users",
+								"credentials",
+								"{{test_username}}"
+							]
+						},
+						"description": "Get user credentials info (safe, no passwords)"
+					},
+					"response": []
+				},
+				{
+					"name": "Create Mock Data",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/admin/mock-data/create",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"admin",
+								"mock-data",
+								"create"
+							]
+						},
+						"description": "Manually create comprehensive mock data for testing"
+					},
+					"response": []
+				},
+				{
+					"name": "Analyze Game Distribution",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/admin/mock-data/analyze",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"admin",
+								"mock-data",
+								"analyze"
+							]
+						},
+						"description": "Analyze current game distribution per team"
+					},
+					"response": []
+				},
+				{
+					"name": "Clear Mock Data",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/admin/mock-data/clear",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"admin",
+								"mock-data",
+								"clear"
+							]
+						},
+						"description": "Clear all mock data without recreating"
+					},
+					"response": []
+				},
+				{
+					"name": "Recalculate Overall Rankings",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/admin/mock-data/recalculate-rankings",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"admin",
+								"mock-data",
+								"recalculate-rankings"
+							]
+						},
+						"description": "Recalculate overall rankings for existing standings"
+					},
+					"response": []
+				},
+				{
+					"name": "Debug - Test Simple Endpoint",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/admin/debug/test",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"admin",
+								"debug",
+								"test"
+							]
+						},
+						"description": "Simple test endpoint to verify debug routing"
+					},
+					"response": []
+				},
+				{
+					"name": "Debug - Test Standings Access",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/admin/debug/standings-test",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"admin",
+								"debug",
+								"standings-test"
+							]
+						},
+						"description": "Test basic standings database access"
+					},
+					"response": []
+				},
+				{
+					"name": "Create Debug Conference Game",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/admin/debug/create-conference-game?homeTeamName=Alabama&awayTeamName=Auburn&weekNumber=12",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"admin",
+								"debug",
+								"create-conference-game"
+							],
+							"query": [
+								{
+									"key": "homeTeamName",
+									"value": "Alabama"
+								},
+								{
+									"key": "awayTeamName",
+									"value": "Auburn"
+								},
+								{
+									"key": "weekNumber",
+									"value": "12"
+								}
+							]
+						},
+						"description": "Create a debug conference game between two teams"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Debug Info",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/admin/debug",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"admin",
+								"debug"
+							]
+						},
+						"description": "Get comprehensive debug information and available endpoints"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Complete Dashboard Workflow",
+			"description": "Complete workflow for loading dashboard data for a selected team",
+			"item": [
+				{
+					"name": "1. Login and Get Token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const responseJson = pm.response.json();",
+									"    pm.environment.set('auth_token', responseJson.token);",
+									"    pm.environment.set('user_id', responseJson.user.id);",
+									"    console.log('✅ Login successful, token saved');",
+									"} else {",
+									"    console.log('❌ Login failed');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"{{test_username}}\",\n    \"password\": \"{{test_password}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/login",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"auth",
+								"login"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "2. Get Available Teams for Selection",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const teams = pm.response.json();",
+									"    if (teams.length > 0) {",
+									"        pm.environment.set('dashboard_team_id', teams[0].id);",
+									"        pm.environment.set('dashboard_team_name', teams[0].name);",
+									"        console.log('✅ Teams loaded, selected:', teams[0].name);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/teams/human",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"teams",
+								"human"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "3. Select Team",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    console.log('✅ Team selected successfully');",
+									"} else {",
+									"    console.log('❌ Team selection failed');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"teamId\": \"{{dashboard_team_id}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/select-team",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"auth",
+								"select-team"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "4. Get Team Details",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const team = pm.response.json();",
+									"    pm.environment.set('team_conference', team.conference);",
+									"    console.log('✅ Team details loaded:', team.name, 'in', team.conference);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/teams/{{dashboard_team_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"teams",
+								"{{dashboard_team_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "5. Get Team Standing",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const standing = pm.response.json();",
+									"    console.log('✅ Team standing loaded: W-L:', standing.wins + '-' + standing.losses);",
+									"} else {",
+									"    console.log('⚠️ No standing found for team');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/standings/team/{{dashboard_team_id}}/year/{{current_year}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"standings",
+								"team",
+								"{{dashboard_team_id}}",
+								"year",
+								"{{current_year}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "6. Get Team Schedule",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const games = pm.response.json();",
+									"    console.log('✅ Team schedule loaded:', games.length, 'games');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/games/team/{{dashboard_team_id}}?year={{current_year}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"games",
+								"team",
+								"{{dashboard_team_id}}"
+							],
+							"query": [
+								{
+									"key": "year",
+									"value": "{{current_year}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "7. Get Recent Games",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const games = pm.response.json();",
+									"    console.log('✅ Recent games loaded:', games.length, 'games');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/games/recent?teamId={{dashboard_team_id}}&limit=5",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"games",
+								"recent"
+							],
+							"query": [
+								{
+									"key": "teamId",
+									"value": "{{dashboard_team_id}}"
+								},
+								{
+									"key": "limit",
+									"value": "5"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "8. Get Upcoming Games",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const games = pm.response.json();",
+									"    console.log('✅ Upcoming games loaded:', games.length, 'games');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/games/upcoming?teamId={{dashboard_team_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"games",
+								"upcoming"
+							],
+							"query": [
+								{
+									"key": "teamId",
+									"value": "{{dashboard_team_id}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "9. Get Conference Standings",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const standings = pm.response.json();",
+									"    console.log('✅ Conference standings loaded:', standings.length, 'teams');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/standings/conference/{{team_conference}}/year/{{current_year}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"standings",
+								"conference",
+								"{{team_conference}}",
+								"year",
+								"{{current_year}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "10. Get Championship Bid Analysis",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const bid = pm.response.json();",
+									"    console.log('✅ Championship analysis loaded. Can win conference:', bid.canStillWinConference);",
+									"    console.log('🎯 Dashboard workflow complete!');",
+									"} else {",
+									"    console.log('⚠️ Championship analysis not available');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/conference-championship/bid/{{dashboard_team_id}}/{{current_year}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"conference-championship",
+								"bid",
+								"{{dashboard_team_id}}",
+								"{{current_year}}"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Set current year if not already set",
+					"if (!pm.environment.get('current_year')) {",
+					"    pm.environment.set('current_year', new Date().getFullYear());",
+					"}",
+					"",
+					"// Set default test credentials if not set",
+					"if (!pm.environment.get('test_username')) {",
+					"    pm.environment.set('test_username', 'testuser');",
+					"}",
+					"if (!pm.environment.get('test_email')) {",
+					"    pm.environment.set('test_email', 'test@example.com');",
+					"}",
+					"if (!pm.environment.get('test_password')) {",
+					"    pm.environment.set('test_password', 'password123');",
+					"}"
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Global test script for error handling",
+					"if (pm.response.code >= 400) {",
+					"    console.log('❌ Request failed with status:', pm.response.code);",
+					"    console.log('Response:', pm.response.text());",
+					"}"
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8080/api/v2",
+			"type": "string"
+		},
+		{
+			"key": "current_year",
+			"value": "2025",
+			"type": "string"
+		},
+		{
+			"key": "test_username",
+			"value": "testuser",
+			"type": "string"
+		},
+		{
+			"key": "test_email",
+			"value": "test@example.com",
+			"type": "string"
+		},
+		{
+			"key": "test_password",
+			"value": "password123",
+			"type": "string"
+		}
+	]
+}

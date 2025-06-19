@@ -1,10 +1,12 @@
 package com.footballdynasty.service;
 
 import com.footballdynasty.dto.*;
+import com.footballdynasty.entity.Team;
 import com.footballdynasty.entity.User;
 import com.footballdynasty.exception.ResourceNotFoundException;
 import com.footballdynasty.mapper.TeamMapper;
 import com.footballdynasty.mapper.UserMapper;
+import com.footballdynasty.repository.TeamRepository;
 import com.footballdynasty.repository.UserRepository;
 import com.footballdynasty.security.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,6 +29,7 @@ import java.util.UUID;
 public class AuthService {
     
     private final UserRepository userRepository;
+    private final TeamRepository teamRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
     private final AuthenticationManager authenticationManager;
@@ -35,12 +38,14 @@ public class AuthService {
     
     @Autowired
     public AuthService(UserRepository userRepository, 
+                      TeamRepository teamRepository,
                       PasswordEncoder passwordEncoder,
                       JwtUtil jwtUtil,
                       AuthenticationManager authenticationManager,
                       UserMapper userMapper,
                       TeamMapper teamMapper) {
         this.userRepository = userRepository;
+        this.teamRepository = teamRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtUtil = jwtUtil;
         this.authenticationManager = authenticationManager;
@@ -127,6 +132,13 @@ public class AuthService {
     public UserDTO selectTeam(String username, UUID teamId) {
         User user = userRepository.findByUsername(username)
             .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        
+        // Find and mark the team as human-controlled
+        Team team = teamRepository.findById(teamId)
+            .orElseThrow(() -> new ResourceNotFoundException("Team not found"));
+        
+        team.setIsHuman(true);
+        teamRepository.save(team);
         
         user.setSelectedTeamId(teamId);
         user = userRepository.save(user);
