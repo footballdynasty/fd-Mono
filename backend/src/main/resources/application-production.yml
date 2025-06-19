@@ -1,0 +1,17 @@
+# Production Profile Configuration
+app:
+  environment: production
+  mock-data:
+    enabled: false
+
+logging:
+  level:
+    com.footballdynasty: INFO
+    org.springframework.security: WARN
+
+spring:
+  jpa:
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: false

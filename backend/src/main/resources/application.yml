@@ -1,0 +1,65 @@
+spring:
+  application:
+    name: football-dynasty-api
+  lifecycle:
+    timeout-per-shutdown-phase: 10s
+  
+  datasource:
+    url: jdbc:postgresql://localhost:5432/fd_db
+    username: fd_user
+    password: ${DB_PASSWORD:password}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      connection-timeout: 20000
+      maximum-pool-size: 5
+      minimum-idle: 1
+      idle-timeout: 300000
+      max-lifetime: 1200000
+      leak-detection-threshold: 60000
+    
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+
+server:
+  port: 8080
+  servlet:
+    context-path: /api/v2
+  shutdown: immediate
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: when-authorized
+
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operationsSorter: method
+
+logging:
+  level:
+    com.footballdynasty: DEBUG
+    org.springframework.security: DEBUG
+
+# JWT Configuration
+jwt:
+  secret: mySecretKeyForFootballDynastyApplicationThatIsLongEnoughForHS256Algorithm
+  expiration: 86400000 # 24 hours in milliseconds
+
+# Environment Configuration
+app:
+  environment: development
+  mock-data:
+    enabled: false
