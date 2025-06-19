@@ -298,10 +298,17 @@ const ScheduleFilters: React.FC<ScheduleFiltersProps> = ({
                 sx={{ borderColor: 'rgba(255,255,255,0.3)' }}
               />
               <Chip
-                label={filters.week ? `Week ${filters.week}` : 'Current Week'}
+                label={filters.week ? 
+                  `Week ${filters.week}${filters.week === weekNavigation.currentWeekNumber ? ' (Current)' : ''}` : 
+                  'Current Week'
+                }
                 size="small"
                 variant="outlined"
-                sx={{ borderColor: 'rgba(255,255,255,0.3)' }}
+                sx={{ 
+                  borderColor: filters.week === weekNavigation.currentWeekNumber ? 'primary.main' : 'rgba(255,255,255,0.3)',
+                  color: filters.week === weekNavigation.currentWeekNumber ? 'primary.main' : 'inherit',
+                  fontWeight: filters.week === weekNavigation.currentWeekNumber ? 600 : 400,
+                }}
               />
               <Chip
                 label={filters.teamView === 'selected' 

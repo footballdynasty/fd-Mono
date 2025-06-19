@@ -44,17 +44,15 @@ const WeekNavigation: React.FC<WeekNavigationProps> = ({
 }) => {
   const handleWeekSelect = (event: SelectChangeEvent<string>) => {
     const selectedValue = event.target.value;
-    if (selectedValue === 'current') {
-      onWeekSelect(null); // null means current week
-    } else {
-      const weekOption = weekOptions.find(w => w.value === selectedValue);
-      if (weekOption) {
-        onWeekSelect(weekOption.weekNumber);
-      }
+    const weekOption = weekOptions.find(w => w.value === selectedValue);
+    if (weekOption) {
+      onWeekSelect(weekOption.weekNumber);
     }
   };
 
-  const selectedWeekOption = weekOptions.find(w => w.weekNumber === currentWeek);
+  // Find the selected week option, defaulting to current week if no selection
+  const selectedWeekOption = weekOptions.find(w => w.weekNumber === currentWeek) ||
+    weekOptions.find(w => w.isCurrentWeek);
 
   return (
     <Box sx={{ flex: 1, minWidth: 200 }}>
@@ -76,7 +74,7 @@ const WeekNavigation: React.FC<WeekNavigationProps> = ({
         
         <FormControl sx={{ minWidth: 120, flex: 1 }}>
           <Select
-            value={currentWeek === null ? 'current' : selectedWeekOption?.value || 'current'}
+            value={selectedWeekOption?.value || ''}
             onChange={handleWeekSelect}
             size="small"
             disabled={loading}
@@ -90,16 +88,27 @@ const WeekNavigation: React.FC<WeekNavigationProps> = ({
               },
             }}
           >
-            <MenuItem value="current">
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <CalendarIcon sx={{ fontSize: 16 }} />
-                Current Week
-              </Box>
-            </MenuItem>
             {weekOptions.map((week) => (
               <MenuItem key={week.value} value={week.value}>
-                {week.label}
-                {week.isCurrentWeek && ' (Current)'}
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, width: '100%' }}>
+                  {week.isCurrentWeek && (
+                    <CalendarIcon sx={{ 
+                      fontSize: 16, 
+                      color: 'primary.main',
+                      mr: 0.5 
+                    }} />
+                  )}
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      fontWeight: week.isCurrentWeek ? 600 : 400,
+                      color: week.isCurrentWeek ? 'primary.main' : 'inherit',
+                    }}
+                  >
+                    {week.label}
+                    {week.isCurrentWeek && ' (Current Week)'}
+                  </Typography>
+                </Box>
               </MenuItem>
             ))}
           </Select>

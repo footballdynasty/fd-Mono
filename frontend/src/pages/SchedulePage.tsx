@@ -49,6 +49,9 @@ const SchedulePage: React.FC = () => {
     conference: null,
   });
 
+  // Track if we've initialized from current week data
+  const [hasInitializedFromCurrentWeek, setHasInitializedFromCurrentWeek] = useState(false);
+
   // Fetch schedule data using the custom hook
   const {
     data: games,
@@ -101,6 +104,17 @@ const SchedulePage: React.FC = () => {
       conference: conferenceParam === 'All Conferences' ? null : conferenceParam,
     });
   }, [searchParams]);
+
+  // Initialize to current week when current week data is available and no URL params specify a week
+  useEffect(() => {
+    if (currentWeek && !hasInitializedFromCurrentWeek && !searchParams.get('week')) {
+      setFilters(prev => ({
+        ...prev,
+        week: currentWeek.currentWeek,
+      }));
+      setHasInitializedFromCurrentWeek(true);
+    }
+  }, [currentWeek, hasInitializedFromCurrentWeek, searchParams]);
 
   const handleFiltersChange = (newFilters: ScheduleFiltersState) => {
     setFilters(newFilters);
