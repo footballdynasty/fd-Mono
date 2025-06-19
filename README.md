@@ -70,30 +70,112 @@ frontend/
 - PostgreSQL 12+
 - Maven 3.6+
 
-### Backend Setup
+### Database Setup
 
-1. **Database Setup**
-   ```sql
-   CREATE DATABASE fd_db;
-   CREATE USER fd_user WITH PASSWORD 'your_password';
-   GRANT ALL PRIVILEGES ON DATABASE fd_db TO fd_user;
-   ```
+#### 1. Install PostgreSQL
 
-2. **Environment Configuration**
-   ```bash
-   export DB_PASSWORD=your_password
-   ```
+**macOS with Homebrew:**
+```bash
+brew install postgresql
+brew services start postgresql
+```
 
-3. **Run the Backend**
+**Ubuntu/Debian:**
+```bash
+sudo apt update
+sudo apt install postgresql postgresql-contrib
+```
+
+**CentOS/RHEL:**
+```bash
+sudo yum install postgresql-server postgresql-contrib
+sudo postgresql-setup initdb
+sudo systemctl start postgresql
+```
+
+#### 2. Create Database and User
+
+```bash
+# Connect to PostgreSQL as superuser
+psql postgres
+
+# In the PostgreSQL prompt, run these commands:
+CREATE DATABASE fd_db;
+CREATE USER fd_user WITH PASSWORD 'your_password_here';
+GRANT ALL PRIVILEGES ON DATABASE fd_db TO fd_user;
+\q
+```
+
+#### 3. Set Environment Variable
+
+```bash
+# Add to your shell profile (~/.bashrc, ~/.zshrc, etc.)
+export DB_PASSWORD=your_password_here
+
+# Or set temporarily for current session
+export DB_PASSWORD=your_password_here
+```
+
+#### 4. Test Database Connection
+
+```bash
+# Test connection with the created user
+psql -h localhost -d fd_db -U fd_user
+
+# Should prompt for password and connect successfully
+# Type \q to exit
+```
+
+#### Quick Setup Script
+
+```bash
+# Create database and user in one command
+psql postgres -c "CREATE DATABASE fd_db;"
+psql postgres -c "CREATE USER fd_user WITH PASSWORD 'fd_password';"
+psql postgres -c "GRANT ALL PRIVILEGES ON DATABASE fd_db TO fd_user;"
+
+# Set environment variable
+export DB_PASSWORD=fd_password
+
+# Test connection
+psql -h localhost -d fd_db -U fd_user -c "SELECT version();"
+```
+
+### Easy Start Script
+
+**Run both backend and frontend together:**
+```bash
+# Start with testing profile (includes mock data)
+./start.sh testing
+
+# Start with development profile (clean environment)
+./start.sh development
+
+# Start with production profile
+./start.sh production
+```
+
+The start script provides:
+- Interactive service monitoring
+- Health checks and status updates
+- Live log viewing
+- Graceful shutdown with Ctrl+C
+
+### Manual Setup
+
+#### Backend Setup
+
+1. **Run the Backend**
    ```bash
    cd backend
-   mvn spring-boot:run
+   mvn spring-boot:run -P testing  # With mock data
+   mvn spring-boot:run             # Development mode
    ```
 
    The API will be available at `http://localhost:8080/api/v2`
    Swagger UI: `http://localhost:8080/api/v2/swagger-ui.html`
 
-### Frontend Setup
+#### Frontend Setup
 
 1. **Install Dependencies**
    ```bash
@@ -107,6 +189,14 @@ frontend/
    ```
 
    The app will be available at `http://localhost:3000`
+
+### API Testing
+
+Import the included **Postman Collection** (`Football_Dynasty_API_Collection.postman_collection.json`) for comprehensive API testing:
+- 60+ organized endpoints
+- Complete workflow testing
+- Automated token management
+- Environment variables included
 
 ## 🎨 Design System
 

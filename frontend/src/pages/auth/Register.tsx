@@ -88,7 +88,7 @@ const Register: React.FC<RegisterProps> = ({ onBackToLogin }) => {
     setIsSubmitting(true);
 
     try {
-      await register(formData.username, formData.email, formData.password);
+      await register(formData.username, formData.password, formData.email);
     } catch (err: any) {
       setError(err.response?.data?.message || 'Registration failed. Please try again.');
     } finally {
