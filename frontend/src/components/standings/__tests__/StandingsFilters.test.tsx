@@ -36,14 +36,16 @@ describe('StandingsFilters', () => {
   });
 
   it('renders all filter controls', () => {
-    render(
-      <TestWrapper>
-        <StandingsFilters
-          filters={defaultFilters}
-          onFiltersChange={mockOnFiltersChange}
-        />
-      </TestWrapper>
-    );
+    act(() => {
+      render(
+        <TestWrapper>
+          <StandingsFilters
+            filters={defaultFilters}
+            onFiltersChange={mockOnFiltersChange}
+          />
+        </TestWrapper>
+      );
+    });
 
     // Check for filter header
     expect(screen.getByText('Filter Standings')).toBeInTheDocument();
@@ -61,19 +63,23 @@ describe('StandingsFilters', () => {
   it('displays available years in year select', async () => {
     const user = userEvent.setup();
     
-    render(
-      <TestWrapper>
-        <StandingsFilters
-          filters={defaultFilters}
-          onFiltersChange={mockOnFiltersChange}
-          availableYears={[2024, 2023, 2022]}
-        />
-      </TestWrapper>
-    );
+    act(() => {
+      render(
+        <TestWrapper>
+          <StandingsFilters
+            filters={defaultFilters}
+            onFiltersChange={mockOnFiltersChange}
+            availableYears={[2024, 2023, 2022]}
+          />
+        </TestWrapper>
+      );
+    });
 
     // Click on year select
     const yearSelect = screen.getAllByRole('combobox')[0]; // First combobox is year
-    await user.click(yearSelect);
+    await act(async () => {
+      await user.click(yearSelect);
+    });
 
     // Check for year options
     await waitFor(() => {
@@ -86,26 +92,32 @@ describe('StandingsFilters', () => {
   it('calls onFiltersChange when year is selected', async () => {
     const user = userEvent.setup();
     
-    render(
-      <TestWrapper>
-        <StandingsFilters
-          filters={defaultFilters}
-          onFiltersChange={mockOnFiltersChange}
-          availableYears={[2024, 2023, 2022]}
-        />
-      </TestWrapper>
-    );
+    act(() => {
+      render(
+        <TestWrapper>
+          <StandingsFilters
+            filters={defaultFilters}
+            onFiltersChange={mockOnFiltersChange}
+            availableYears={[2024, 2023, 2022]}
+          />
+        </TestWrapper>
+      );
+    });
 
     // Click on year select and choose 2023
     const yearSelect = screen.getAllByRole('combobox')[0]; // First combobox is year
-    await user.click(yearSelect);
+    await act(async () => {
+      await user.click(yearSelect);
+    });
     
     await waitFor(() => {
       const option2023 = screen.getByRole('option', { name: '2023' });
       expect(option2023).toBeInTheDocument();
     });
 
-    await user.click(screen.getByRole('option', { name: '2023' }));
+    await act(async () => {
+      await user.click(screen.getByRole('option', { name: '2023' }));
+    });
 
     expect(mockOnFiltersChange).toHaveBeenCalledWith({
       ...defaultFilters,
