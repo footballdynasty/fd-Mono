@@ -12,6 +12,7 @@ import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -28,6 +29,9 @@ public class MockDataService {
     private final WeekRepository weekRepository;
     private final GameRepository gameRepository;
     private final StandingRepository standingRepository;
+    private final AchievementRepository achievementRepository;
+    private final AchievementRewardRepository achievementRewardRepository;
+    private final AchievementRewardService achievementRewardService;
     private final ConferenceStandingsService conferenceStandingsService;
     
     private final Random random = new Random();
@@ -40,6 +44,9 @@ public class MockDataService {
                           WeekRepository weekRepository,
                           GameRepository gameRepository,
                           StandingRepository standingRepository,
+                          AchievementRepository achievementRepository,
+                          AchievementRewardRepository achievementRewardRepository,
+                          AchievementRewardService achievementRewardService,
                           ConferenceStandingsService conferenceStandingsService) {
         this.appConfig = appConfig;
         this.environment = environment;
@@ -47,6 +54,9 @@ public class MockDataService {
         this.weekRepository = weekRepository;
         this.gameRepository = gameRepository;
         this.standingRepository = standingRepository;
+        this.achievementRepository = achievementRepository;
+        this.achievementRewardRepository = achievementRewardRepository;
+        this.achievementRewardService = achievementRewardService;
         this.conferenceStandingsService = conferenceStandingsService;
     }
     
@@ -69,10 +79,12 @@ public class MockDataService {
         if (appConfig.isTestingEnvironment()) {
             logger.info("FORCE_MOCK_DATA_RECREATE: Deleting existing data and recreating for debugging in testing environment");
             try {
-                // Delete existing games and standings to force recreation
+                // Delete existing games, standings, and achievements to force recreation
                 gameRepository.deleteAll();
                 standingRepository.deleteAll();
-                logger.info("FORCE_DELETE_COMPLETE: Deleted existing games and standings");
+                achievementRewardRepository.deleteAll(); // Delete rewards first to avoid FK constraint
+                achievementRepository.deleteAll();
+                logger.info("FORCE_DELETE_COMPLETE: Deleted existing games, standings, and achievements");
             } catch (Exception e) {
                 logger.error("FORCE_DELETE_ERROR: Failed to delete existing data - {}", e.getMessage(), e);
             }
@@ -141,7 +153,13 @@ public class MockDataService {
         // 3. Calculate standings from game results
         calculateMockStandings();
         
-        logger.info("MOCK_DATA_SUMMARY: Created complete mock season data");
+        // 4. Create mock achievements
+        createMockAchievements();
+        
+        // 5. Initialize achievement rewards
+        initializeAchievementRewards();
+        
+        logger.info("MOCK_DATA_SUMMARY: Created complete mock season data with achievements and rewards");
     }
     
     private void createMockWeeks() {
@@ -1258,6 +1276,349 @@ public class MockDataService {
     }
     
     /**
+     * Create comprehensive mock achievements for CFB management game
+     */
+    private void createMockAchievements() {
+        logger.info("MOCK_ACHIEVEMENTS: Creating comprehensive college football achievements");
+        
+        try {
+            List<Achievement> achievements = new ArrayList<>();
+            
+            // WINS Achievements
+            achievements.addAll(createWinAchievements());
+            
+            // SEASON Achievements  
+            achievements.addAll(createSeasonAchievements());
+            
+            // CHAMPIONSHIP Achievements
+            achievements.addAll(createChampionshipAchievements());
+            
+            // STATISTICS Achievements
+            achievements.addAll(createStatisticsAchievements());
+            
+            // GENERAL Achievements
+            achievements.addAll(createGeneralAchievements());
+            
+            // Save all achievements to database
+            List<Achievement> savedAchievements = achievementRepository.saveAll(achievements);
+            
+            // Randomly complete some achievements for demonstration
+            randomlyCompleteAchievements(savedAchievements);
+            
+            logger.info("MOCK_ACHIEVEMENTS_COMPLETE: Created {} achievements across all categories", savedAchievements.size());
+            
+        } catch (Exception e) {
+            logger.error("FATAL_ERROR: Failed to create mock achievements - {}", e.getMessage(), e);
+            throw e;
+        }
+    }
+    
+    private List<Achievement> createWinAchievements() {
+        List<Achievement> achievements = new ArrayList<>();
+        
+        // First Win
+        achievements.add(new Achievement(
+            "First Victory", 
+            "Win your first game of the season", 
+            Achievement.AchievementType.WINS
+        ));
+        achievements.get(achievements.size() - 1).setRarity(Achievement.AchievementRarity.COMMON);
+        achievements.get(achievements.size() - 1).setIcon("emoji_events");
+        achievements.get(achievements.size() - 1).setColor("#4caf50");
+        
+        // Win Streak Achievements
+        achievements.add(new Achievement(
+            "Hot Streak", 
+            "Win 3 games in a row", 
+            Achievement.AchievementType.WINS
+        ));
+        achievements.get(achievements.size() - 1).setRarity(Achievement.AchievementRarity.COMMON);
+        achievements.get(achievements.size() - 1).setIcon("local_fire_department");
+        achievements.get(achievements.size() - 1).setColor("#ff9800");
+        
+        achievements.add(new Achievement(
+            "Unstoppable Force", 
+            "Win 5 games in a row", 
+            Achievement.AchievementType.WINS
+        ));
+        achievements.get(achievements.size() - 1).setRarity(Achievement.AchievementRarity.UNCOMMON);
+        achievements.get(achievements.size() - 1).setIcon("whatshot");
+        achievements.get(achievements.size() - 1).setColor("#ff5722");
+        
+        achievements.add(new Achievement(
+            "Dynasty Building", 
+            "Win 10 games in a row", 
+            Achievement.AchievementType.WINS
+        ));
+        achievements.get(achievements.size() - 1).setRarity(Achievement.AchievementRarity.RARE);
+        achievements.get(achievements.size() - 1).setIcon("military_tech");
+        achievements.get(achievements.size() - 1).setColor("#9c27b0");
+        
+        // Season Win Milestones
+        achievements.add(new Achievement(
+            "Bowl Bound", 
+            "Win 6 games in a season", 
+            Achievement.AchievementType.WINS
+        ));
+        achievements.get(achievements.size() - 1).setRarity(Achievement.AchievementRarity.UNCOMMON);
+        achievements.get(achievements.size() - 1).setIcon("sports_football");
+        achievements.get(achievements.size() - 1).setColor("#2196f3");
+        
+        achievements.add(new Achievement(
+            "Top Tier", 
+            "Win 10 games in a season", 
+            Achievement.AchievementType.WINS
+        ));
+        achievements.get(achievements.size() - 1).setRarity(Achievement.AchievementRarity.RARE);
+        achievements.get(achievements.size() - 1).setIcon("star");
+        achievements.get(achievements.size() - 1).setColor("#ffc107");
+        
+        achievements.add(new Achievement(
+            "Perfect Season", 
+            "Go undefeated for an entire season", 
+            Achievement.AchievementType.WINS
+        ));
+        achievements.get(achievements.size() - 1).setRarity(Achievement.AchievementRarity.LEGENDARY);
+        achievements.get(achievements.size() - 1).setIcon("diamond");
+        achievements.get(achievements.size() - 1).setColor("#e91e63");
+        
+        return achievements;
+    }
+    
+    private List<Achievement> createSeasonAchievements() {
+        List<Achievement> achievements = new ArrayList<>();
+        
+        achievements.add(new Achievement(
+            "Rookie Coach", 
+            "Complete your first season as head coach", 
+            Achievement.AchievementType.SEASON
+        ));
+        achievements.get(achievements.size() - 1).setRarity(Achievement.AchievementRarity.COMMON);
+        achievements.get(achievements.size() - 1).setIcon("school");
+        achievements.get(achievements.size() - 1).setColor("#4caf50");
+        
+        achievements.add(new Achievement(
+            "Comeback Kid", 
+            "Win a game when trailing by 14+ points", 
+            Achievement.AchievementType.SEASON
+        ));
+        achievements.get(achievements.size() - 1).setRarity(Achievement.AchievementRarity.UNCOMMON);
+        achievements.get(achievements.size() - 1).setIcon("trending_up");
+        achievements.get(achievements.size() - 1).setColor("#ff9800");
+        
+        achievements.add(new Achievement(
+            "Nail Biter", 
+            "Win 3 games by 3 points or less", 
+            Achievement.AchievementType.SEASON
+        ));
+        achievements.get(achievements.size() - 1).setRarity(Achievement.AchievementRarity.RARE);
+        achievements.get(achievements.size() - 1).setIcon("favorite");
+        achievements.get(achievements.size() - 1).setColor("#f44336");
+        
+        achievements.add(new Achievement(
+            "Turnover Machine", 
+            "Force 20 turnovers in a season", 
+            Achievement.AchievementType.SEASON
+        ));
+        achievements.get(achievements.size() - 1).setRarity(Achievement.AchievementRarity.UNCOMMON);
+        achievements.get(achievements.size() - 1).setIcon("security");
+        achievements.get(achievements.size() - 1).setColor("#607d8b");
+        
+        achievements.add(new Achievement(
+            "Scheduling Nightmare", 
+            "Beat 3 ranked opponents in one season", 
+            Achievement.AchievementType.SEASON
+        ));
+        achievements.get(achievements.size() - 1).setRarity(Achievement.AchievementRarity.EPIC);
+        achievements.get(achievements.size() - 1).setIcon("celebration");
+        achievements.get(achievements.size() - 1).setColor("#3f51b5");
+        
+        return achievements;
+    }
+    
+    private List<Achievement> createChampionshipAchievements() {
+        List<Achievement> achievements = new ArrayList<>();
+        
+        achievements.add(new Achievement(
+            "Conference Champion", 
+            "Win your conference championship", 
+            Achievement.AchievementType.CHAMPIONSHIP
+        ));
+        achievements.get(achievements.size() - 1).setRarity(Achievement.AchievementRarity.EPIC);
+        achievements.get(achievements.size() - 1).setIcon("emoji_events");
+        achievements.get(achievements.size() - 1).setColor("#ffc107");
+        
+        achievements.add(new Achievement(
+            "Bowl Victory", 
+            "Win a bowl game", 
+            Achievement.AchievementType.CHAMPIONSHIP
+        ));
+        achievements.get(achievements.size() - 1).setRarity(Achievement.AchievementRarity.RARE);
+        achievements.get(achievements.size() - 1).setIcon("sports");
+        achievements.get(achievements.size() - 1).setColor("#4caf50");
+        
+        achievements.add(new Achievement(
+            "National Champion", 
+            "Win the College Football Playoff National Championship", 
+            Achievement.AchievementType.CHAMPIONSHIP
+        ));
+        achievements.get(achievements.size() - 1).setRarity(Achievement.AchievementRarity.LEGENDARY);
+        achievements.get(achievements.size() - 1).setIcon("workspace_premium");
+        achievements.get(achievements.size() - 1).setColor("#e91e63");
+        
+        achievements.add(new Achievement(
+            "Playoff Participant", 
+            "Reach the College Football Playoff", 
+            Achievement.AchievementType.CHAMPIONSHIP
+        ));
+        achievements.get(achievements.size() - 1).setRarity(Achievement.AchievementRarity.EPIC);
+        achievements.get(achievements.size() - 1).setIcon("stars");
+        achievements.get(achievements.size() - 1).setColor("#9c27b0");
+        
+        achievements.add(new Achievement(
+            "Dynasty Established", 
+            "Win 3 conference championships", 
+            Achievement.AchievementType.CHAMPIONSHIP
+        ));
+        achievements.get(achievements.size() - 1).setRarity(Achievement.AchievementRarity.LEGENDARY);
+        achievements.get(achievements.size() - 1).setIcon("castle");
+        achievements.get(achievements.size() - 1).setColor("#795548");
+        
+        return achievements;
+    }
+    
+    private List<Achievement> createStatisticsAchievements() {
+        List<Achievement> achievements = new ArrayList<>();
+        
+        achievements.add(new Achievement(
+            "Offensive Juggernaut", 
+            "Score 50+ points in a single game", 
+            Achievement.AchievementType.STATISTICS
+        ));
+        achievements.get(achievements.size() - 1).setRarity(Achievement.AchievementRarity.UNCOMMON);
+        achievements.get(achievements.size() - 1).setIcon("bolt");
+        achievements.get(achievements.size() - 1).setColor("#ff9800");
+        
+        achievements.add(new Achievement(
+            "Defensive Wall", 
+            "Allow 7 points or fewer in a game", 
+            Achievement.AchievementType.STATISTICS
+        ));
+        achievements.get(achievements.size() - 1).setRarity(Achievement.AchievementRarity.UNCOMMON);
+        achievements.get(achievements.size() - 1).setIcon("shield");
+        achievements.get(achievements.size() - 1).setColor("#607d8b");
+        
+        achievements.add(new Achievement(
+            "Shutout Artist", 
+            "Win a game without allowing any points", 
+            Achievement.AchievementType.STATISTICS
+        ));
+        achievements.get(achievements.size() - 1).setRarity(Achievement.AchievementRarity.RARE);
+        achievements.get(achievements.size() - 1).setIcon("block");
+        achievements.get(achievements.size() - 1).setColor("#9e9e9e");
+        
+        achievements.add(new Achievement(
+            "Balanced Attack", 
+            "Have 200+ passing and 200+ rushing yards in one game", 
+            Achievement.AchievementType.STATISTICS
+        ));
+        achievements.get(achievements.size() - 1).setRarity(Achievement.AchievementRarity.RARE);
+        achievements.get(achievements.size() - 1).setIcon("balance");
+        achievements.get(achievements.size() - 1).setColor("#2196f3");
+        
+        achievements.add(new Achievement(
+            "Big Play Specialist", 
+            "Score 5+ touchdowns of 40+ yards in a season", 
+            Achievement.AchievementType.STATISTICS
+        ));
+        achievements.get(achievements.size() - 1).setRarity(Achievement.AchievementRarity.EPIC);
+        achievements.get(achievements.size() - 1).setIcon("flash_on");
+        achievements.get(achievements.size() - 1).setColor("#ffeb3b");
+        
+        return achievements;
+    }
+    
+    private List<Achievement> createGeneralAchievements() {
+        List<Achievement> achievements = new ArrayList<>();
+        
+        achievements.add(new Achievement(
+            "Welcome to College Football", 
+            "Play your first game", 
+            Achievement.AchievementType.GENERAL
+        ));
+        achievements.get(achievements.size() - 1).setRarity(Achievement.AchievementRarity.COMMON);
+        achievements.get(achievements.size() - 1).setIcon("sports_football");
+        achievements.get(achievements.size() - 1).setColor("#4caf50");
+        
+        achievements.add(new Achievement(
+            "Recruiting Ace", 
+            "Successfully recruit 5 top-tier players", 
+            Achievement.AchievementType.GENERAL
+        ));
+        achievements.get(achievements.size() - 1).setRarity(Achievement.AchievementRarity.UNCOMMON);
+        achievements.get(achievements.size() - 1).setIcon("group_add");
+        achievements.get(achievements.size() - 1).setColor("#3f51b5");
+        
+        achievements.add(new Achievement(
+            "Fan Favorite", 
+            "Achieve 90%+ fan satisfaction", 
+            Achievement.AchievementType.GENERAL
+        ));
+        achievements.get(achievements.size() - 1).setRarity(Achievement.AchievementRarity.RARE);
+        achievements.get(achievements.size() - 1).setIcon("favorite");
+        achievements.get(achievements.size() - 1).setColor("#e91e63");
+        
+        achievements.add(new Achievement(
+            "Rivalry Domination", 
+            "Beat your biggest rival 3 years in a row", 
+            Achievement.AchievementType.GENERAL
+        ));
+        achievements.get(achievements.size() - 1).setRarity(Achievement.AchievementRarity.EPIC);
+        achievements.get(achievements.size() - 1).setIcon("military_tech");
+        achievements.get(achievements.size() - 1).setColor("#ff5722");
+        
+        achievements.add(new Achievement(
+            "Program Builder", 
+            "Transform a team from bottom-tier to top-10", 
+            Achievement.AchievementType.GENERAL
+        ));
+        achievements.get(achievements.size() - 1).setRarity(Achievement.AchievementRarity.LEGENDARY);
+        achievements.get(achievements.size() - 1).setIcon("trending_up");
+        achievements.get(achievements.size() - 1).setColor("#4caf50");
+        
+        achievements.add(new Achievement(
+            "Upset Master", 
+            "Beat a top-5 ranked team while unranked", 
+            Achievement.AchievementType.GENERAL
+        ));
+        achievements.get(achievements.size() - 1).setRarity(Achievement.AchievementRarity.EPIC);
+        achievements.get(achievements.size() - 1).setIcon("equalizer");
+        achievements.get(achievements.size() - 1).setColor("#ff9800");
+        
+        return achievements;
+    }
+    
+    private void randomlyCompleteAchievements(List<Achievement> achievements) {
+        logger.info("MOCK_ACHIEVEMENTS_COMPLETION: Randomly completing achievements for demonstration");
+        
+        int completedCount = 0;
+        for (Achievement achievement : achievements) {
+            // Complete ~30% of achievements randomly for demonstration
+            if (random.nextDouble() < 0.3) {
+                achievement.setIsCompleted(true);
+                achievement.setDateCompleted(Instant.now().toEpochMilli() - random.nextInt(1000000000)); // Random past completion time
+                completedCount++;
+            }
+        }
+        
+        // Save the completion updates
+        achievementRepository.saveAll(achievements);
+        
+        logger.info("MOCK_ACHIEVEMENTS_COMPLETION: Completed {} out of {} achievements for demonstration", 
+            completedCount, achievements.size());
+    }
+    
+    /**
      * Manually trigger mock data creation (for testing/admin purposes)
      */
     public void recreateMockData() {
@@ -1351,6 +1712,10 @@ public class MockDataService {
             weekRepository.findByYearOrderByWeekNumber(CURRENT_YEAR)
                 .forEach(week -> weekRepository.delete(week));
             
+            // Delete all achievements (and rewards first to avoid FK constraint)
+            achievementRewardRepository.deleteAll();
+            achievementRepository.deleteAll();
+            
             logger.info("MOCK_DATA_CLEANUP_COMPLETE: Cleaned existing mock data");
             
         } catch (Exception e) {
@@ -1366,10 +1731,11 @@ public class MockDataService {
             long standingsCount = standingRepository.findByYearOrderByWinsDescLossesAsc(CURRENT_YEAR).size();
             long gamesCount = gameRepository.findByYearOrderByWeekAndDate(CURRENT_YEAR).size();
             long weeksCount = weekRepository.findByYearOrderByWeekNumber(CURRENT_YEAR).size();
+            long achievementsCount = achievementRepository.count();
             
-            if (standingsCount > 0 || gamesCount > 0 || weeksCount > 0) {
-                logger.info("PROD_CLEAR_FOUND: Found {} standings, {} games, {} weeks to clear", 
-                    standingsCount, gamesCount, weeksCount);
+            if (standingsCount > 0 || gamesCount > 0 || weeksCount > 0 || achievementsCount > 0) {
+                logger.info("PROD_CLEAR_FOUND: Found {} standings, {} games, {} weeks, {} achievements to clear", 
+                    standingsCount, gamesCount, weeksCount, achievementsCount);
                 
                 // Use the existing clean method
                 cleanMockData();
@@ -1381,6 +1747,30 @@ public class MockDataService {
             
         } catch (Exception e) {
             logger.error("PROD_CLEAR_ERROR: Failed to clear mock data in production - {}", e.getMessage(), e);
+        }
+    }
+    
+    private void initializeAchievementRewards() {
+        logger.info("REWARD_INIT_START: Initializing achievement rewards system");
+        
+        try {
+            // Check if rewards already exist to avoid duplicates
+            long existingRewardCount = achievementRewardRepository.count();
+            if (existingRewardCount > 0) {
+                logger.info("REWARD_INIT_SKIP: Found {} existing rewards, skipping initialization", existingRewardCount);
+                return;
+            }
+            
+            // Initialize the reward system
+            achievementRewardService.initializeDefaultRewards();
+            
+            // Get final count for logging
+            long finalRewardCount = achievementRewardRepository.count();
+            logger.info("REWARD_INIT_COMPLETE: Successfully initialized {} achievement rewards", finalRewardCount);
+            
+        } catch (Exception e) {
+            logger.error("REWARD_INIT_ERROR: Failed to initialize achievement rewards - {}", e.getMessage(), e);
+            // Don't throw exception as this shouldn't break mock data creation
         }
     }
     
