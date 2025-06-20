@@ -7,13 +7,6 @@ import '@testing-library/jest-dom';
 import StandingsFilters, { StandingsFiltersState } from '../StandingsFilters';
 import theme from '../../../theme/theme';
 
-// Mock framer-motion to avoid animation issues in tests
-jest.mock('framer-motion', () => ({
-  motion: {
-    div: ({ children, ...props }: any) => <div {...props}>{children}</div>,
-  },
-  AnimatePresence: ({ children }: any) => children,
-}));
 
 // Mock useDebounce hook
 jest.mock('../../../hooks/useDebounce', () => ({

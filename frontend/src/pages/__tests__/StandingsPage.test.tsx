@@ -8,13 +8,6 @@ import StandingsPage from '../StandingsPage';
 import theme from '../../theme/theme';
 import { Standing } from '../../types';
 
-// Mock framer-motion to avoid animation issues in tests
-jest.mock('framer-motion', () => ({
-  motion: {
-    div: ({ children, ...props }: any) => <div {...props}>{children}</div>,
-  },
-  AnimatePresence: ({ children }: any) => children,
-}));
 
 // Mock the useStandings hook
 const mockUseStandings = jest.fn();
@@ -338,20 +331,17 @@ describe('StandingsPage', () => {
   });
 
   it('renders responsive design elements', () => {
-    // Mock mobile breakpoint
-    Object.defineProperty(window, 'matchMedia', {
-      writable: true,
-      value: jest.fn().mockImplementation(query => ({
-        matches: query === '(max-width:899.95px)',
-        media: query,
-        onchange: null,
-        addListener: jest.fn(),
-        removeListener: jest.fn(),
-        addEventListener: jest.fn(),
-        removeEventListener: jest.fn(),
-        dispatchEvent: jest.fn(),
-      })),
-    });
+    // Override global mock for mobile breakpoint test
+    window.matchMedia = jest.fn().mockImplementation(query => ({
+      matches: query === '(max-width:899.95px)',
+      media: query,
+      onchange: null,
+      addListener: jest.fn(),
+      removeListener: jest.fn(),
+      addEventListener: jest.fn(),
+      removeEventListener: jest.fn(),
+      dispatchEvent: jest.fn(),
+    }));
 
     render(
       <TestWrapper>

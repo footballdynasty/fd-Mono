@@ -7,14 +7,6 @@ import StandingsTable from '../StandingsTable';
 import theme from '../../../theme/theme';
 import { Standing } from '../../../types';
 
-// Mock framer-motion to avoid animation issues in tests
-jest.mock('framer-motion', () => ({
-  motion: {
-    div: ({ children, ...props }: any) => <div {...props}>{children}</div>,
-    tr: ({ children, ...props }: any) => <tr {...props}>{children}</tr>,
-  },
-  AnimatePresence: ({ children }: any) => children,
-}));
 
 // Test wrapper component
 const TestWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
@@ -358,20 +350,17 @@ describe('StandingsTable', () => {
   });
 
   it('handles responsive design by hiding columns on mobile', () => {
-    // Mock mobile breakpoint
-    Object.defineProperty(window, 'matchMedia', {
-      writable: true,
-      value: jest.fn().mockImplementation(query => ({
-        matches: query === '(max-width:899.95px)', // Mobile breakpoint
-        media: query,
-        onchange: null,
-        addListener: jest.fn(),
-        removeListener: jest.fn(),
-        addEventListener: jest.fn(),
-        removeEventListener: jest.fn(),
-        dispatchEvent: jest.fn(),
-      })),
-    });
+    // Override global mock for mobile breakpoint test
+    window.matchMedia = jest.fn().mockImplementation(query => ({
+      matches: query === '(max-width:899.95px)', // Mobile breakpoint
+      media: query,
+      onchange: null,
+      addListener: jest.fn(),
+      removeListener: jest.fn(),
+      addEventListener: jest.fn(),
+      removeEventListener: jest.fn(),
+      dispatchEvent: jest.fn(),
+    }));
 
     render(
       <TestWrapper>
