@@ -31,6 +31,7 @@ public class MockDataService {
     private final GameRepository gameRepository;
     private final StandingRepository standingRepository;
     private final AchievementRepository achievementRepository;
+    private final AchievementRequestRepository achievementRequestRepository;
     private final AchievementRewardRepository achievementRewardRepository;
     private final AchievementRewardService achievementRewardService;
     private final ConferenceStandingsService conferenceStandingsService;
@@ -46,6 +47,7 @@ public class MockDataService {
                           GameRepository gameRepository,
                           StandingRepository standingRepository,
                           AchievementRepository achievementRepository,
+                          AchievementRequestRepository achievementRequestRepository,
                           AchievementRewardRepository achievementRewardRepository,
                           AchievementRewardService achievementRewardService,
                           ConferenceStandingsService conferenceStandingsService) {
@@ -56,6 +58,7 @@ public class MockDataService {
         this.gameRepository = gameRepository;
         this.standingRepository = standingRepository;
         this.achievementRepository = achievementRepository;
+        this.achievementRequestRepository = achievementRequestRepository;
         this.achievementRewardRepository = achievementRewardRepository;
         this.achievementRewardService = achievementRewardService;
         this.conferenceStandingsService = conferenceStandingsService;
@@ -84,6 +87,7 @@ public class MockDataService {
                 gameRepository.deleteAll();
                 standingRepository.deleteAll();
                 achievementRewardRepository.deleteAll(); // Delete rewards first to avoid FK constraint
+                achievementRequestRepository.deleteAll(); // Delete requests before achievements to avoid FK constraint
                 achievementRepository.deleteAll();
                 logger.info("FORCE_DELETE_COMPLETE: Deleted existing games, standings, and achievements");
             } catch (Exception e) {
@@ -1966,8 +1970,9 @@ public class MockDataService {
             weekRepository.findByYearOrderByWeekNumber(CURRENT_YEAR)
                 .forEach(week -> weekRepository.delete(week));
             
-            // Delete all achievements (and rewards first to avoid FK constraint)
+            // Delete all achievements (and related data first to avoid FK constraints)
             achievementRewardRepository.deleteAll();
+            achievementRequestRepository.deleteAll();
             achievementRepository.deleteAll();
             
             logger.info("MOCK_DATA_CLEANUP_COMPLETE: Cleaned existing mock data");

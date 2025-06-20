@@ -17,6 +17,7 @@ import {
   Search,
   Logout,
   SportsFootball,
+  AdminPanelSettings,
 } from '@mui/icons-material';
 import { motion } from 'framer-motion';
 import { useAuth } from '../../hooks/useAuth';
@@ -27,7 +28,7 @@ interface HeaderProps {
 }
 
 const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
-  const { user, selectedTeam, logout } = useAuth();
+  const { user, selectedTeam, logout, isCommissioner } = useAuth();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
   const handleMenuClick = (event: React.MouseEvent<HTMLElement>) => {
@@ -168,6 +169,23 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
               secondary={selectedTeam?.name}
             />
           </MenuItem>
+          {isCommissioner && (
+            <MenuItem onClick={handleMenuClose}>
+              <ListItemIcon>
+                <AdminPanelSettings fontSize="small" sx={{ color: '#ffd700' }} />
+              </ListItemIcon>
+              <ListItemText 
+                primary="Commissioner"
+                primaryTypographyProps={{
+                  sx: {
+                    color: '#ffd700',
+                    fontWeight: 600,
+                    fontSize: '0.875rem'
+                  }
+                }}
+              />
+            </MenuItem>
+          )}
           <MenuItem onClick={handleLogout}>
             <ListItemIcon>
               <Logout fontSize="small" />
