@@ -4,6 +4,7 @@ import com.footballdynasty.dto.GameDTO;
 import com.footballdynasty.entity.Game;
 import com.footballdynasty.mapper.GameMapper;
 import com.footballdynasty.repository.GameRepository;
+import com.footballdynasty.util.ResponseUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -71,23 +72,22 @@ public class GameController {
                 .map(gameMapper::toDTO)
                 .collect(Collectors.toList());
             
-            Map<String, Object> response = new HashMap<>();
-            response.put("content", gameDTOs);
-            response.put("totalElements", gamesPage.getTotalElements());
-            response.put("totalPages", gamesPage.getTotalPages());
-            response.put("currentPage", page);
-            response.put("size", size);
-            response.put("hasNext", gamesPage.hasNext());
-            response.put("hasPrevious", gamesPage.hasPrevious());
+            Map<String, Object> response = ResponseUtil.createPaginatedResponse(
+                gameDTOs,
+                gamesPage.getTotalElements(),
+                gamesPage.getTotalPages(),
+                page,
+                size,
+                gamesPage.hasNext(),
+                gamesPage.hasPrevious()
+            );
             
             logger.debug("GAMES_RESPONSE: Returning {} games", gameDTOs.size());
             return ResponseEntity.ok(response);
             
         } catch (Exception e) {
             logger.error("ERROR: Failed to retrieve games - {}", e.getMessage(), e);
-            Map<String, String> error = new HashMap<>();
-            error.put("message", "Failed to retrieve games: " + e.getMessage());
-            return ResponseEntity.status(500).body(error);
+            return ResponseUtil.createInternalServerError("Failed to retrieve games: " + e.getMessage());
         }
     }
     
@@ -110,16 +110,12 @@ public class GameController {
                 return ResponseEntity.ok(gameDTO);
             } else {
                 logger.warn("GAME_NOT_FOUND: Game with ID {} not found", id);
-                Map<String, String> error = new HashMap<>();
-                error.put("message", "Game not found with ID: " + id);
-                return ResponseEntity.status(404).body(error);
+                return ResponseUtil.createNotFoundError("Game not found with ID: " + id);
             }
             
         } catch (Exception e) {
             logger.error("ERROR: Failed to retrieve game {} - {}", id, e.getMessage(), e);
-            Map<String, String> error = new HashMap<>();
-            error.put("message", "Failed to retrieve game: " + e.getMessage());
-            return ResponseEntity.status(500).body(error);
+            return ResponseUtil.createInternalServerError("Failed to retrieve game: " + e.getMessage());
         }
     }
     
@@ -154,9 +150,7 @@ public class GameController {
             
         } catch (Exception e) {
             logger.error("ERROR: Failed to retrieve games for team {} - {}", teamId, e.getMessage(), e);
-            Map<String, String> error = new HashMap<>();
-            error.put("message", "Failed to retrieve team games: " + e.getMessage());
-            return ResponseEntity.status(500).body(error);
+            return ResponseUtil.createInternalServerError("Failed to retrieve team games: " + e.getMessage());
         }
     }
     
@@ -191,9 +185,7 @@ public class GameController {
             
         } catch (Exception e) {
             logger.error("ERROR: Failed to retrieve upcoming games - {}", e.getMessage(), e);
-            Map<String, String> error = new HashMap<>();
-            error.put("message", "Failed to retrieve upcoming games: " + e.getMessage());
-            return ResponseEntity.status(500).body(error);
+            return ResponseUtil.createInternalServerError("Failed to retrieve upcoming games: " + e.getMessage());
         }
     }
     
@@ -234,9 +226,7 @@ public class GameController {
             
         } catch (Exception e) {
             logger.error("ERROR: Failed to retrieve recent games - {}", e.getMessage(), e);
-            Map<String, String> error = new HashMap<>();
-            error.put("message", "Failed to retrieve recent games: " + e.getMessage());
-            return ResponseEntity.status(500).body(error);
+            return ResponseUtil.createInternalServerError("Failed to retrieve recent games: " + e.getMessage());
         }
     }
     
@@ -265,9 +255,7 @@ public class GameController {
             
         } catch (Exception e) {
             logger.error("ERROR: Failed to retrieve games for week {} - {}", weekId, e.getMessage(), e);
-            Map<String, String> error = new HashMap<>();
-            error.put("message", "Failed to retrieve week games: " + e.getMessage());
-            return ResponseEntity.status(500).body(error);
+            return ResponseUtil.createInternalServerError("Failed to retrieve week games: " + e.getMessage());
         }
     }
 }

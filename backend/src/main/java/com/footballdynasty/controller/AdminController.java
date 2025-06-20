@@ -21,6 +21,7 @@ import com.footballdynasty.config.AppConfig;
 import com.footballdynasty.dto.AchievementDTO;
 import com.footballdynasty.dto.AchievementRewardDTO;
 import com.footballdynasty.dto.AchievementRequestDTO;
+import com.footballdynasty.util.ResponseUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -102,9 +103,7 @@ public class AdminController {
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             logger.error("Error retrieving users: {}", e.getMessage(), e);
-            Map<String, String> error = new HashMap<>();
-            error.put("message", "Failed to retrieve users: " + e.getMessage());
-            return ResponseEntity.status(500).body(error);
+            return ResponseUtil.createInternalServerError("Failed to retrieve users: " + e.getMessage());
         }
     }
     
@@ -136,15 +135,11 @@ public class AdminController {
                 
                 return ResponseEntity.ok(response);
             } else {
-                Map<String, String> error = new HashMap<>();
-                error.put("message", "User not found with identifier: " + identifier);
-                return ResponseEntity.status(404).body(error);
+                return ResponseUtil.createNotFoundError("User not found with identifier: " + identifier);
             }
         } catch (Exception e) {
             logger.error("Error retrieving user {}: {}", identifier, e.getMessage(), e);
-            Map<String, String> error = new HashMap<>();
-            error.put("message", "Failed to retrieve user: " + e.getMessage());
-            return ResponseEntity.status(500).body(error);
+            return ResponseUtil.createInternalServerError("Failed to retrieve user: " + e.getMessage());
         }
     }
     
