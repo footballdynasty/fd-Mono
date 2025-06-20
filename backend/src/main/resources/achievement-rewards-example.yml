@@ -1,0 +1,86 @@
+# Example Achievement Reward Configuration
+# Copy this to application.yml to customize rewards
+
+achievement:
+  rewards:
+    # Default rewards by rarity level
+    defaults:
+      COMMON:
+        gameRestarts: 0
+        traitOptions:
+          - name: "Speed"
+            boost: 1
+            
+      UNCOMMON:
+        gameRestarts: 0
+        traitOptions:
+          - name: "Strength"
+            boost: 1
+          - name: "Agility"
+            boost: 1
+            
+      RARE:
+        gameRestarts: 0
+        traitOptions:
+          - name: "Acceleration"
+            boost: 2
+          - name: "Break Tackle"
+            boost: 2
+            
+      EPIC:
+        gameRestarts: 1
+        traitOptions:
+          - name: "Awareness"
+            boost: 2
+            
+      LEGENDARY:
+        gameRestarts: 1
+        traitOptions:
+          - name: "Deep Accuracy"
+            boost: 3
+          - name: "Spectacular Catch"
+            boost: 2
+        
+    # Trait categorization for UI and validation
+    traits:
+      basic:
+        - "Speed"
+        - "Strength"
+        - "Agility"
+        - "Stamina"
+        - "Carrying"
+        - "Catching"
+        - "Tackle"
+        
+      intermediate:
+        - "Acceleration"
+        - "Awareness"
+        - "Break Tackle"
+        - "Short Accuracy"
+        - "Short Route Running"
+        - "Run Block"
+        - "Man Coverage"
+        - "Zone Coverage"
+        - "Toughness"
+        - "Jumping"
+        
+      advanced:
+        - "Medium Accuracy"
+        - "Medium Route Running"
+        - "Pass Block"
+        - "Play Recognition"
+        - "Throw Power"
+        - "Throw Under Pressure"
+        - "Pass Rush Moves"
+        - "Block Shedding"
+        
+      elite:
+        - "Deep Accuracy"
+        - "Deep Route Running"
+        - "Break Sack"
+        - "Spectacular Catch"
+        - "Catch in Traffic"
+        - "Finesse Moves"
+        - "Press Coverage"
+        - "Return"
+        - "Kick Accuracy"
