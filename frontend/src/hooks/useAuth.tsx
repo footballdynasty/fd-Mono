@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { User, Team, AuthContextType, LoginRequest, AuthResponse } from '../types';
+import { User, Team, AuthContextType, LoginRequest, AuthResponse, Role } from '../types';
 import { authApi } from '../services/api';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -111,6 +111,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     user,
     selectedTeam,
     isAuthenticated: !!user,
+    isCommissioner: !!user?.roles?.includes(Role.COMMISSIONER),
     isLoading,
     login,
     register,

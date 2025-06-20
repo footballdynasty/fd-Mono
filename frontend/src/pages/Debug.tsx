@@ -1,4 +1,5 @@
 import React from 'react';
+import * as Sentry from '@sentry/react';
 import {
   Box,
   Typography,
@@ -22,11 +23,9 @@ import {
   SportsFootball,
   Group,
   Dashboard as DashboardIcon,
-  Login,
   ExitToApp,
   ContentCopy,
   OpenInNew,
-  DataObject,
   Refresh,
   Settings,
 } from '@mui/icons-material';
@@ -44,7 +43,7 @@ const Debug: React.FC = () => {
   const queryClient = useQueryClient();
   const { user, logout, isAuthenticated } = useAuth();
   const { showSuccess, showInfo, showError } = useToast();
-
+  
   // Query environment info
   const { data: environmentData, isLoading: envLoading } = useQuery({
     queryKey: ['environment'],
@@ -67,6 +66,62 @@ const Debug: React.FC = () => {
     navigator.clipboard.writeText(text);
     showSuccess('Copied to clipboard!');
   };
+
+  // Sentry test functions
+  const testSentryError = () => {
+    console.log('Testing Sentry Error...');
+    console.log('Sentry is configured with hardcoded DSN');
+    const testError = new Error('Test error for Sentry monitoring - This is intentional for testing');
+    const eventId = Sentry.captureException(testError, {
+      tags: { section: 'debug-test', test_type: 'manual_error' },
+      extra: { test_timestamp: new Date().toISOString(), user_triggered: true }
+    });
+    console.log('Sentry Event ID:', eventId);
+    showInfo(`Test error sent to Sentry! Event ID: ${eventId}`);
+  };
+
+  const testSentryMessage = () => {
+    console.log('Testing Sentry Message...');
+    const eventId = Sentry.captureMessage('Test message from debug console', {
+      level: 'info',
+      tags: { section: 'debug-test', test_type: 'manual_message' },
+      extra: { test_timestamp: new Date().toISOString(), user_triggered: true }
+    });
+    console.log('Sentry Message Event ID:', eventId);
+    showInfo(`Test message sent to Sentry! Event ID: ${eventId}`);
+  };
+
+  const testSentrySpan = () => {
+    console.log('Testing Sentry Span...');
+    Sentry.startSpan(
+      {
+        op: 'ui.action',
+        name: 'Debug Test Span',
+      },
+      (span) => {
+        span.setAttribute('test_type', 'manual_span');
+        span.setAttribute('user_triggered', true);
+        span.setAttribute('timestamp', new Date().toISOString());
+        
+        // Simulate some work
+        const start = Date.now();
+        while (Date.now() - start < 100) { /* simulate work */ }
+        
+        showInfo('Test span completed! Check Sentry for performance data.');
+        console.log('Sentry Span completed');
+      }
+    );
+  };
+
+  const showEnvironmentVars = () => {
+    console.log('=== Environment Variables Debug ===');
+    console.log('NODE_ENV:', process.env.NODE_ENV);
+    console.log('REACT_APP_SENTRY_DSN:', process.env.REACT_APP_SENTRY_DSN);
+    console.log('REACT_APP_API_URL:', process.env.REACT_APP_API_URL);
+    console.log('All REACT_APP_ vars:', Object.keys(process.env).filter(key => key.startsWith('REACT_APP_')));
+    showInfo('Environment variables logged to console');
+  };
+
 
   const debugRoutes = [
     {
@@ -115,6 +170,24 @@ const Debug: React.FC = () => {
       url: 'http://localhost:8080/api/v2/admin/users/testuser',
       method: 'GET',
       description: 'Get specific user by username or ID',
+    },
+    {
+      title: 'Test Backend Sentry Exception',
+      url: 'http://localhost:8080/api/v2/admin/sentry/test-exception',
+      method: 'POST',
+      description: 'Test Sentry exception capture from backend',
+    },
+    {
+      title: 'Test Backend Sentry Message',
+      url: 'http://localhost:8080/api/v2/admin/sentry/test-message',
+      method: 'POST',
+      description: 'Test Sentry message capture from backend',
+    },
+    {
+      title: 'Backend Sentry Status',
+      url: 'http://localhost:8080/api/v2/admin/sentry/status',
+      method: 'GET',
+      description: 'Check backend Sentry configuration status',
     },
   ];
 
@@ -253,6 +326,24 @@ const Debug: React.FC = () => {
                             >
                               {createMockDataMutation.isPending ? 'Creating...' : 'Create Mock Data'}
                             </Button>
+                          </Box>
+                        </Grid>
+                        <Grid item xs={12} sm={6} md={3}>
+                          <Box>
+                            <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                              Sentry Status
+                            </Typography>
+                            <Chip
+                              label="Configured"
+                              color="success"
+                              sx={{ fontWeight: 600 }}
+                            />
+                            <Typography variant="caption" display="block" sx={{ mt: 1, opacity: 0.7 }}>
+                              DSN: https://c42d97c95d615...
+                            </Typography>
+                            <Typography variant="caption" display="block" sx={{ mt: 0.5, opacity: 0.5 }}>
+                              Mode: Hardcoded (Official Setup)
+                            </Typography>
                           </Box>
                         </Grid>
                       </Grid>
@@ -474,6 +565,132 @@ const Debug: React.FC = () => {
                           }}
                         >
                           Go to Dashboard
+                        </Button>
+                      </Grid>
+                      <Grid item xs={12} sm={6} md={3}>
+                        <Button
+                          fullWidth
+                          variant="outlined"
+                          onClick={testSentryError}
+                          startIcon={<BugReport />}
+                          sx={{
+                            borderColor: 'rgba(255,255,255,0.3)',
+                            color: 'text.primary',
+                            '&:hover': {
+                              borderColor: 'error.main',
+                              backgroundColor: 'rgba(244, 67, 54, 0.1)',
+                            },
+                          }}
+                        >
+                          Test Sentry Error
+                        </Button>
+                      </Grid>
+                      <Grid item xs={12} sm={6} md={3}>
+                        <Button
+                          fullWidth
+                          variant="outlined"
+                          onClick={testSentryMessage}
+                          startIcon={<BugReport />}
+                          sx={{
+                            borderColor: 'rgba(255,255,255,0.3)',
+                            color: 'text.primary',
+                            '&:hover': {
+                              borderColor: 'warning.main',
+                              backgroundColor: 'rgba(255, 193, 7, 0.1)',
+                            },
+                          }}
+                        >
+                          Test Sentry Message
+                        </Button>
+                      </Grid>
+                      <Grid item xs={12} sm={6} md={3}>
+                        <Button
+                          fullWidth
+                          variant="outlined"
+                          onClick={testSentrySpan}
+                          startIcon={<Settings />}
+                          sx={{
+                            borderColor: 'rgba(255,255,255,0.3)',
+                            color: 'text.primary',
+                            '&:hover': {
+                              borderColor: 'info.main',
+                              backgroundColor: 'rgba(33, 150, 243, 0.1)',
+                            },
+                          }}
+                        >
+                          Test Sentry Span
+                        </Button>
+                      </Grid>
+                      <Grid item xs={12} sm={6} md={3}>
+                        <Button
+                          fullWidth
+                          variant="outlined"
+                          onClick={showEnvironmentVars}
+                          startIcon={<Settings />}
+                          sx={{
+                            borderColor: 'rgba(255,255,255,0.3)',
+                            color: 'text.primary',
+                            '&:hover': {
+                              borderColor: 'info.main',
+                              backgroundColor: 'rgba(33, 150, 243, 0.1)',
+                            },
+                          }}
+                        >
+                          Debug Env Vars
+                        </Button>
+                      </Grid>
+                      <Grid item xs={12} sm={6} md={3}>
+                        <Button
+                          fullWidth
+                          variant="outlined"
+                          onClick={() => {throw new Error("This is your first error!");}}
+                          startIcon={<BugReport />}
+                          sx={{
+                            borderColor: 'rgba(255,255,255,0.3)',
+                            color: 'text.primary',
+                            '&:hover': {
+                              borderColor: 'error.main',
+                              backgroundColor: 'rgba(244, 67, 54, 0.1)',
+                            },
+                          }}
+                        >
+                          Break the world
+                        </Button>
+                      </Grid>
+                      <Grid item xs={12} sm={6} md={3}>
+                        <Button
+                          fullWidth
+                          variant="outlined"
+                          onClick={() => window.open('http://localhost:8080/api/v2/admin/sentry/test-exception', '_blank')}
+                          startIcon={<BugReport />}
+                          sx={{
+                            borderColor: 'rgba(255,255,255,0.3)',
+                            color: 'text.primary',
+                            '&:hover': {
+                              borderColor: 'error.main',
+                              backgroundColor: 'rgba(244, 67, 54, 0.1)',
+                            },
+                          }}
+                        >
+                          Test Backend Sentry
+                        </Button>
+                      </Grid>
+                      <Grid item xs={12} sm={6} md={3}>
+                        <Button
+                          fullWidth
+                          variant="outlined"
+                          onClick={() => window.open('http://localhost:8080/api/v2/admin/sentry/status', '_blank')}
+                          startIcon={<Settings />}
+                          sx={{
+                            borderColor: 'rgba(255,255,255,0.3)',
+                            color: 'text.primary',
+                            '&:hover': {
+                              borderColor: 'info.main',
+                              backgroundColor: 'rgba(33, 150, 243, 0.1)',
+                            },
+                          }}
+                        >
+                          Backend Sentry Status
                         </Button>
                       </Grid>
                     </Grid>
