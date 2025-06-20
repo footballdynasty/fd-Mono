@@ -11,7 +11,7 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "standings", uniqueConstraints = {
-    @UniqueConstraint(columnNames = {"team_id", "year"})
+    @UniqueConstraint(columnNames = {"team_id", "`year`"})
 })
 public class Standing {
     
@@ -25,6 +25,7 @@ public class Standing {
     
     @NotNull
     @Min(value = 1900, message = "Year must be valid")
+    @Column(name = "`year`")
     private Integer year;
     
     @Min(value = 0, message = "Wins cannot be negative")
