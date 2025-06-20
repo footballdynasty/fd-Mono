@@ -1,0 +1,225 @@
+name: Frontend CI - Test Coverage & Linting
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/frontend-ci.yml'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/frontend-ci.yml'
+
+jobs:
+  frontend-test-and-lint:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: frontend/package-lock.json
+
+    - name: Install dependencies
+      working-directory: ./frontend
+      run: npm ci
+
+    - name: Run TypeScript type checking
+      working-directory: ./frontend
+      run: npm run type-check
+
+    - name: Run ESLint
+      working-directory: ./frontend
+      run: npx eslint src --ext .ts,.tsx --format=json --output-file=eslint-report.json || true
+
+    - name: Run ESLint with console output
+      working-directory: ./frontend
+      run: npx eslint src --ext .ts,.tsx --max-warnings=10
+
+    - name: Run unit tests with coverage
+      working-directory: ./frontend
+      run: npm test -- --coverage --watchAll=false --passWithNoTests
+
+    - name: Upload coverage reports to Codecov
+      if: github.event_name == 'push' || github.event_name == 'pull_request'
+      uses: codecov/codecov-action@v4
+      with:
+        file: ./frontend/coverage/lcov.info
+        flags: frontend
+        name: frontend-coverage
+        fail_ci_if_error: false
+        token: ${{ secrets.CODECOV_TOKEN }}
+
+    - name: Comment coverage on PR
+      if: github.event_name == 'pull_request'
+      uses: romeovs/lcov-reporter-action@v0.3.1
+      with:
+        lcov-file: ./frontend/coverage/lcov.info
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        title: Frontend Test Coverage Report
+
+    - name: Check test coverage threshold
+      working-directory: ./frontend
+      run: |
+        if [ -f "coverage/coverage-summary.json" ]; then
+          # Extract coverage percentages
+          lines_pct=$(node -p "JSON.parse(require('fs').readFileSync('coverage/coverage-summary.json', 'utf8')).total.lines.pct")
+          statements_pct=$(node -p "JSON.parse(require('fs').readFileSync('coverage/coverage-summary.json', 'utf8')).total.statements.pct")
+          functions_pct=$(node -p "JSON.parse(require('fs').readFileSync('coverage/coverage-summary.json', 'utf8')).total.functions.pct")
+          branches_pct=$(node -p "JSON.parse(require('fs').readFileSync('coverage/coverage-summary.json', 'utf8')).total.branches.pct")
+          
+          echo "📊 Frontend Test Coverage Results:"
+          echo "Lines: ${lines_pct}%"
+          echo "Statements: ${statements_pct}%"
+          echo "Functions: ${functions_pct}%"
+          echo "Branches: ${branches_pct}%"
+          
+          # Set minimum coverage thresholds
+          MIN_LINES=40
+          MIN_STATEMENTS=40
+          MIN_FUNCTIONS=30
+          MIN_BRANCHES=25
+          
+          # Check thresholds
+          if (( $(echo "$lines_pct < $MIN_LINES" | bc -l) )); then
+            echo "❌ Lines coverage ${lines_pct}% is below minimum threshold of ${MIN_LINES}%"
+            exit 1
+          fi
+          
+          if (( $(echo "$statements_pct < $MIN_STATEMENTS" | bc -l) )); then
+            echo "❌ Statements coverage ${statements_pct}% is below minimum threshold of ${MIN_STATEMENTS}%"
+            exit 1
+          fi
+          
+          if (( $(echo "$functions_pct < $MIN_FUNCTIONS" | bc -l) )); then
+            echo "❌ Functions coverage ${functions_pct}% is below minimum threshold of ${MIN_FUNCTIONS}%"
+            exit 1
+          fi
+          
+          if (( $(echo "$branches_pct < $MIN_BRANCHES" | bc -l) )); then
+            echo "❌ Branches coverage ${branches_pct}% is below minimum threshold of ${MIN_BRANCHES}%"
+            exit 1
+          fi
+          
+          echo "✅ All coverage thresholds met!"
+        else
+          echo "⚠️ Coverage summary not found"
+        fi
+
+    - name: Build application
+      working-directory: ./frontend
+      env:
+        CI: false
+        REACT_APP_API_URL: http://localhost:8080/api/v2
+      run: npm run build
+
+    - name: Archive build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: frontend-build
+        path: frontend/build
+
+    - name: Archive test results
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: frontend-test-results
+        path: |
+          frontend/coverage/
+          frontend/eslint-report.json
+
+  e2e-tests:
+    runs-on: ubuntu-latest
+    needs: frontend-test-and-lint
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: frontend/package-lock.json
+
+    - name: Install dependencies
+      working-directory: ./frontend
+      run: npm ci
+
+    - name: Install Playwright browsers
+      working-directory: ./frontend
+      run: npx playwright install --with-deps
+
+    - name: Build frontend
+      working-directory: ./frontend
+      env:
+        CI: false
+        REACT_APP_API_URL: http://localhost:8080/api/v2
+      run: npm run build
+
+    - name: Start frontend server
+      working-directory: ./frontend
+      run: |
+        npx serve -s build -l 3000 &
+        echo $! > server.pid
+        # Wait for server to start
+        sleep 5
+
+    - name: Run Playwright E2E tests
+      working-directory: ./frontend
+      env:
+        PLAYWRIGHT_BASE_URL: http://localhost:3000
+      run: npm run test:e2e || true
+
+    - name: Stop frontend server
+      working-directory: ./frontend
+      run: |
+        if [ -f server.pid ]; then
+          kill $(cat server.pid) || true
+          rm server.pid
+        fi
+
+    - name: Upload Playwright report
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: playwright-report
+        path: frontend/playwright-report/
+
+  security-scan:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: frontend/package-lock.json
+
+    - name: Install dependencies
+      working-directory: ./frontend
+      run: npm ci
+
+    - name: Run npm audit
+      working-directory: ./frontend
+      run: |
+        npm audit --audit-level=moderate || true
+        echo "📋 Security audit completed. Review any high/critical vulnerabilities above."
+
+    - name: Check for outdated packages
+      working-directory: ./frontend
+      run: |
+        echo "📦 Checking for outdated packages:"
+        npm outdated || true

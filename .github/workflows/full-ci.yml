@@ -1,0 +1,314 @@
+name: Full Stack CI - Complete Test Suite
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    # Run daily at 2 AM UTC to catch dependency issues
+    - cron: '0 2 * * *'
+
+env:
+  # Global environment variables
+  NODE_VERSION: '18'
+  JAVA_VERSION: '17'
+
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      backend: ${{ steps.changes.outputs.backend }}
+      frontend: ${{ steps.changes.outputs.frontend }}
+      workflows: ${{ steps.changes.outputs.workflows }}
+    steps:
+    - uses: actions/checkout@v4
+    - uses: dorny/paths-filter@v3
+      id: changes
+      with:
+        filters: |
+          backend:
+            - 'backend/**'
+          frontend:
+            - 'frontend/**'
+          workflows:
+            - '.github/workflows/**'
+
+  backend-full:
+    needs: changes
+    if: ${{ needs.changes.outputs.backend == 'true' || needs.changes.outputs.workflows == 'true' || github.event_name == 'schedule' }}
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: fd_test_db
+          POSTGRES_USER: fd_test_user
+          POSTGRES_PASSWORD: test_password
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    strategy:
+      matrix:
+        profile: [test, testing]
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up JDK ${{ env.JAVA_VERSION }}
+      uses: actions/setup-java@v4
+      with:
+        java-version: ${{ env.JAVA_VERSION }}
+        distribution: 'temurin'
+
+    - name: Cache Maven dependencies
+      uses: actions/cache@v4
+      with:
+        path: ~/.m2
+        key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+        restore-keys: ${{ runner.os }}-m2
+
+    - name: Wait for PostgreSQL
+      run: |
+        until pg_isready -h localhost -p 5432 -U fd_test_user; do
+          echo "Waiting for PostgreSQL..."
+          sleep 2
+        done
+
+    - name: Run backend tests with profile ${{ matrix.profile }}
+      working-directory: ./backend
+      env:
+        SPRING_PROFILES_ACTIVE: ${{ matrix.profile }}
+        DB_HOST: localhost
+        DB_PORT: 5432
+        DB_NAME: fd_test_db
+        DB_USERNAME: fd_test_user
+        DB_PASSWORD: test_password
+        SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+      run: |
+        mvn clean test -P${{ matrix.profile }} jacoco:report
+        
+    - name: Upload backend coverage
+      uses: codecov/codecov-action@v4
+      with:
+        file: ./backend/target/site/jacoco/jacoco.xml
+        flags: backend-${{ matrix.profile }}
+        name: backend-${{ matrix.profile }}-coverage
+        fail_ci_if_error: false
+        token: ${{ secrets.CODECOV_TOKEN }}
+
+  frontend-full:
+    needs: changes
+    if: ${{ needs.changes.outputs.frontend == 'true' || needs.changes.outputs.workflows == 'true' || github.event_name == 'schedule' }}
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [18, 20]
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+        cache-dependency-path: frontend/package-lock.json
+
+    - name: Install dependencies
+      working-directory: ./frontend
+      run: npm ci
+
+    - name: Run frontend tests
+      working-directory: ./frontend
+      run: |
+        npm run type-check
+        npm test -- --coverage --watchAll=false --passWithNoTests
+        npm run build
+
+    - name: Upload frontend coverage
+      if: matrix.node-version == 18
+      uses: codecov/codecov-action@v4
+      with:
+        file: ./frontend/coverage/lcov.info
+        flags: frontend-node${{ matrix.node-version }}
+        name: frontend-node${{ matrix.node-version }}-coverage
+        fail_ci_if_error: false
+        token: ${{ secrets.CODECOV_TOKEN }}
+
+  integration-tests:
+    needs: [backend-full, frontend-full]
+    if: always() && (needs.backend-full.result == 'success' || needs.backend-full.result == 'skipped') && (needs.frontend-full.result == 'success' || needs.frontend-full.result == 'skipped')
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: fd_test_db
+          POSTGRES_USER: fd_test_user
+          POSTGRES_PASSWORD: test_password
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up JDK ${{ env.JAVA_VERSION }}
+      uses: actions/setup-java@v4
+      with:
+        java-version: ${{ env.JAVA_VERSION }}
+        distribution: 'temurin'
+
+    - name: Set up Node.js ${{ env.NODE_VERSION }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        cache-dependency-path: frontend/package-lock.json
+
+    - name: Cache Maven dependencies
+      uses: actions/cache@v4
+      with:
+        path: ~/.m2
+        key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+        restore-keys: ${{ runner.os }}-m2
+
+    - name: Install frontend dependencies
+      working-directory: ./frontend
+      run: npm ci
+
+    - name: Build frontend
+      working-directory: ./frontend
+      env:
+        CI: false
+        REACT_APP_API_URL: http://localhost:8080/api/v2
+      run: npm run build
+
+    - name: Start backend server
+      working-directory: ./backend
+      env:
+        SPRING_PROFILES_ACTIVE: testing
+        DB_HOST: localhost
+        DB_PORT: 5432
+        DB_NAME: fd_test_db
+        DB_USERNAME: fd_test_user
+        DB_PASSWORD: test_password
+        SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+      run: |
+        mvn spring-boot:run -Ptesting &
+        echo $! > backend.pid
+        # Wait for backend to start
+        timeout 120 bash -c 'until curl -f http://localhost:8080/api/v2/health || curl -f http://localhost:8080/api/v2/admin/debug/simple-test; do sleep 2; done'
+
+    - name: Start frontend server  
+      working-directory: ./frontend
+      run: |
+        npx serve -s build -l 3000 &
+        echo $! > frontend.pid
+        sleep 5
+
+    - name: Install Playwright
+      working-directory: ./frontend
+      run: npx playwright install --with-deps
+
+    - name: Run E2E integration tests
+      working-directory: ./frontend
+      env:
+        PLAYWRIGHT_BASE_URL: http://localhost:3000
+      run: npm run test:e2e
+
+    - name: Stop servers
+      if: always()
+      run: |
+        if [ -f ./backend/backend.pid ]; then
+          kill $(cat ./backend/backend.pid) || true
+        fi
+        if [ -f ./frontend/frontend.pid ]; then
+          kill $(cat ./frontend/frontend.pid) || true
+        fi
+
+    - name: Upload E2E test results
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: e2e-results
+        path: |
+          frontend/playwright-report/
+          frontend/test-results/
+
+  security-audit:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Node.js ${{ env.NODE_VERSION }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        cache-dependency-path: frontend/package-lock.json
+
+    - name: Set up JDK ${{ env.JAVA_VERSION }}
+      uses: actions/setup-java@v4
+      with:
+        java-version: ${{ env.JAVA_VERSION }}
+        distribution: 'temurin'
+
+    - name: Frontend security audit
+      working-directory: ./frontend
+      run: |
+        npm ci
+        npm audit --audit-level=high
+        
+    - name: Backend security scan
+      working-directory: ./backend  
+      run: |
+        mvn dependency-check:check || true
+        
+  deployment-ready:
+    needs: [backend-full, frontend-full, integration-tests, security-audit]
+    if: always() && github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Check all jobs status
+      run: |
+        echo "Backend: ${{ needs.backend-full.result }}"
+        echo "Frontend: ${{ needs.frontend-full.result }}"
+        echo "Integration: ${{ needs.integration-tests.result }}"
+        echo "Security: ${{ needs.security-audit.result }}"
+        
+        if [ "${{ needs.backend-full.result }}" != "success" ] && [ "${{ needs.backend-full.result }}" != "skipped" ]; then
+          echo "❌ Backend tests failed"
+          exit 1
+        fi
+        
+        if [ "${{ needs.frontend-full.result }}" != "success" ] && [ "${{ needs.frontend-full.result }}" != "skipped" ]; then
+          echo "❌ Frontend tests failed" 
+          exit 1
+        fi
+        
+        if [ "${{ needs.integration-tests.result }}" != "success" ] && [ "${{ needs.integration-tests.result }}" != "skipped" ]; then
+          echo "❌ Integration tests failed"
+          exit 1
+        fi
+        
+        echo "✅ All tests passed! Ready for deployment."
