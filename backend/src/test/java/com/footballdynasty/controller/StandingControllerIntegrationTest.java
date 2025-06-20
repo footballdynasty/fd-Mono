@@ -53,15 +53,17 @@ class StandingControllerIntegrationTest {
         // Create test team
         testTeam = new Team();
         testTeam.setName("Test Team");
+        testTeam.setUsername("test-team-user");
         testTeam.setConference("ACC");
         testTeam.setCoach("Test Coach");
         testTeam.setImageUrl("http://example.com/logo.png");
         testTeam = teamRepository.save(testTeam);
 
-        // Create test standing
+        // Create test standing for current year with rank
+        int currentYear = java.time.LocalDateTime.now().getYear();
         testStanding = new Standing();
         testStanding.setTeam(testTeam);
-        testStanding.setYear(2024);
+        testStanding.setYear(currentYear);
         testStanding.setWins(8);
         testStanding.setLosses(3);
         testStanding.setConferenceWins(5);
@@ -76,6 +78,7 @@ class StandingControllerIntegrationTest {
     @Test
     @WithMockUser
     void testGetAllStandings() throws Exception {
+        int currentYear = java.time.LocalDateTime.now().getYear();
         mockMvc.perform(get("/standings"))
                 .andDo(result -> {
                     System.out.println("Response status: " + result.getResponse().getStatus());
@@ -84,7 +87,7 @@ class StandingControllerIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content", hasSize(1)))
                 .andExpect(jsonPath("$.content[0].id", is(testStanding.getId().toString())))
-                .andExpect(jsonPath("$.content[0].year", is(2024)))
+                .andExpect(jsonPath("$.content[0].year", is(currentYear)))
                 .andExpect(jsonPath("$.content[0].wins", is(8)))
                 .andExpect(jsonPath("$.content[0].losses", is(3)));
     }
@@ -208,6 +211,7 @@ class StandingControllerIntegrationTest {
         // Create another team for the new standing
         Team newTeam = new Team();
         newTeam.setName("New Team");
+        newTeam.setUsername("new-team-user");
         newTeam.setConference("SEC");
         newTeam.setCoach("New Coach");
         newTeam.setImageUrl("http://example.com/newlogo.png");
@@ -329,6 +333,7 @@ class StandingControllerIntegrationTest {
         for (int i = 0; i < 15; i++) {
             Team team = new Team();
             team.setName("Team " + i);
+            team.setUsername("team-" + i + "-user");
             team.setConference("Big 12");
             team.setCoach("Coach " + i);
             team.setImageUrl("http://example.com/logo" + i + ".png");

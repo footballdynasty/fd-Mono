@@ -46,7 +46,7 @@ jobs:
       env:
         SPRING_PROFILES_ACTIVE: test
         SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
-      run: mvn test -Dmaven.test.failure.ignore=true
+      run: mvn test
 
     - name: Generate test coverage report
       working-directory: ./backend
