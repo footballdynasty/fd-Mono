@@ -63,3 +63,17 @@ app:
   environment: development
   mock-data:
     enabled: false
+
+# Sentry Configuration
+sentry:
+  dsn: ${SENTRY_DSN:https://50fabe156e12c01058ada4d3160a76f3@o4509526142681088.ingest.us.sentry.io/4509526245769216}
+  environment: ${SPRING_PROFILES_ACTIVE:development}
+  release: @project.version@
+  traces-sample-rate: 1.0
+  debug: true
+  send-default-pii: true
+  max-breadcrumbs: 100
+  logging:
+    minimum-event-level: warn
+    minimum-breadcrumb-level: info
+  exception-resolver-order: -2147483647
