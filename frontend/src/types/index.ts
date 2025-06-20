@@ -90,6 +90,24 @@ export interface StandingUpdateRequest {
   receiving_votes?: number;
 }
 
+export interface AchievementReward {
+  id: string;
+  type: RewardType;
+  traitName?: string;
+  boostAmount: number;
+  active: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+  displayName?: string;
+  description?: string;
+  category?: string;
+}
+
+export enum RewardType {
+  TRAIT_BOOST = 'TRAIT_BOOST',
+  GAME_RESTART = 'GAME_RESTART',
+}
+
 export interface Achievement {
   id: string;
   description: string;
@@ -100,8 +118,33 @@ export interface Achievement {
   icon?: string;
   color?: string;
   isCompleted: boolean;
+  isPending?: boolean;
+  pendingRequestId?: string;
   createdAt?: string;
   updatedAt?: string;
+  rewards?: AchievementReward[];
+}
+
+export interface AchievementRequest {
+  id: string;
+  achievementId: string;
+  userId: string;
+  userDisplayName: string;
+  teamId?: string;
+  teamName?: string;
+  requestReason: string;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  createdAt: string;
+  reviewedAt?: string;
+  reviewedBy?: string;
+}
+
+export interface AchievementCompletionResponse {
+  achievement?: Achievement;
+  requestId?: string;
+  status: 'completed' | 'pending';
+  message: string;
+  timestamp: number;
 }
 
 export enum AchievementType {
@@ -143,12 +186,19 @@ export interface PaginatedResponse<T> {
   last: boolean;
 }
 
+export enum Role {
+  USER = 'USER',
+  COMMISSIONER = 'COMMISSIONER'
+}
+
 export interface User {
   id: string;
   username: string;
   email?: string;
   selectedTeamId?: string;
   selectedTeam?: Team;
+  roles?: Role[];
+  isActive?: boolean;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -158,6 +208,7 @@ export interface AuthContextType {
   selectedTeam: Team | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  isCommissioner: boolean;
   login: (username: string, password: string) => Promise<void>;
   register: (username: string, password: string, email?: string) => Promise<void>;
   logout: () => void;

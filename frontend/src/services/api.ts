@@ -1,5 +1,6 @@
 import axios from 'axios';
-import type { PaginatedResponse, Team, Game, Standing, Achievement, LoginRequest, RegisterRequest, AuthResponse, StandingCreateRequest, StandingUpdateRequest } from '../types';
+import * as Sentry from '@sentry/react';
+import type { PaginatedResponse, Team, Game, Standing, Achievement, AchievementReward, AchievementCompletionResponse, LoginRequest, RegisterRequest, AuthResponse, StandingCreateRequest, StandingUpdateRequest } from '../types';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8080/api/v2';
 
@@ -34,6 +35,22 @@ api.interceptors.response.use(
       localStorage.removeItem('selected_team');
       window.location.reload();
     }
+
+    // Report errors to Sentry for monitoring
+    if (error.response?.status && error.response.status >= 500) {
+      Sentry.captureException(error, {
+        tags: {
+          section: 'api',
+          status: error.response.status,
+        },
+        extra: {
+          url: error.config?.url,
+          method: error.config?.method,
+          response: error.response?.data,
+        },
+      });
+    }
+
     console.error('API Error:', error.response?.data || error.message);
     return Promise.reject(error);
   }
@@ -175,11 +192,41 @@ export const achievementApi = {
   update: (id: string, achievement: Partial<Achievement>) =>
     api.put<Achievement>(`/achievements/${id}`, achievement),
   
-  complete: (id: string) =>
-    api.patch<Achievement>(`/achievements/${id}/complete`),
+  complete: (id: string, userContext?: { userId?: string; userDisplayName?: string; teamId?: string; teamName?: string; isAdmin?: boolean; requestReason?: string }) =>
+    api.patch<AchievementCompletionResponse>(`/achievements/${id}/complete`, {
+      userId: userContext?.userId || 'guest-user',
+      userDisplayName: userContext?.userDisplayName || 'Guest User',
+      teamId: userContext?.teamId || '',
+      teamName: userContext?.teamName || '',
+      isAdmin: userContext?.isAdmin || false,
+      requestReason: userContext?.requestReason || 'Achievement completed'
+    }),
   
   delete: (id: string) =>
     api.delete(`/achievements/${id}`),
+};
+
+export const achievementRewardApi = {
+  getByAchievementId: (achievementId: string) =>
+    api.get<{ rewards: AchievementReward[]; count: number; achievementId: string }>(`/admin/achievements/${achievementId}/rewards`),
+  
+  getStatistics: () =>
+    api.get<{ statistics: any }>('/admin/rewards/statistics'),
+  
+  getTraitOptions: () =>
+    api.get<{ traitOptions: any }>('/admin/rewards/trait-options'),
+  
+  initialize: () =>
+    api.post<{ message: string }>('/admin/rewards/initialize'),
+  
+  create: (achievementId: string, reward: Omit<AchievementReward, 'id' | 'createdAt' | 'updatedAt'>) =>
+    api.post<{ reward: AchievementReward; message: string }>(`/admin/achievements/${achievementId}/rewards`, reward),
+  
+  update: (rewardId: string, reward: Partial<AchievementReward>) =>
+    api.put<{ reward: AchievementReward; message: string }>(`/admin/rewards/${rewardId}`, reward),
+  
+  delete: (rewardId: string) =>
+    api.delete<{ message: string }>(`/admin/rewards/${rewardId}`),
 };
 
 export const weekApi = {
