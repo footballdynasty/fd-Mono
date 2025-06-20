@@ -15,21 +15,6 @@ on:
 jobs:
   backend-test-and-lint:
     runs-on: ubuntu-latest
-    
-    services:
-      postgres:
-        image: postgres:15
-        env:
-          POSTGRES_DB: fd_test_db
-          POSTGRES_USER: fd_test_user
-          POSTGRES_PASSWORD: test_password
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 5432:5432
 
     steps:
     - name: Checkout code
@@ -48,13 +33,6 @@ jobs:
         key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
         restore-keys: ${{ runner.os }}-m2
 
-    - name: Wait for PostgreSQL to be ready
-      run: |
-        until pg_isready -h localhost -p 5432 -U fd_test_user; do
-          echo "Waiting for PostgreSQL..."
-          sleep 2
-        done
-
     - name: Compile backend
       working-directory: ./backend
       run: mvn clean compile
@@ -67,13 +45,8 @@ jobs:
       working-directory: ./backend
       env:
         SPRING_PROFILES_ACTIVE: test
-        DB_HOST: localhost
-        DB_PORT: 5432
-        DB_NAME: fd_test_db
-        DB_USERNAME: fd_test_user
-        DB_PASSWORD: test_password
         SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
-      run: mvn test jacoco:report
+      run: mvn test
 
     - name: Generate test coverage report
       working-directory: ./backend

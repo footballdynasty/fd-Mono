@@ -69,6 +69,15 @@ public class MockDataService {
         logger.info("METHOD_ENTRY: initializeMockData - environment={}, mockDataEnabled={}", 
             appConfig.getEnvironment(), appConfig.isMockDataEnabled());
         
+        // Skip initialization during test profile to prevent transaction rollback issues
+        String[] activeProfiles = environment.getActiveProfiles();
+        for (String profile : activeProfiles) {
+            if ("test".equals(profile)) {
+                logger.info("MOCK_DATA_SKIP: Skipping mock data initialization for test profile");
+                return;
+            }
+        }
+        
         if (!appConfig.isMockDataEnabled()) {
             logger.info("MOCK_DATA_SKIP: Mock data disabled for profile: {}", getActiveProfiles());
             
@@ -171,253 +180,25 @@ public class MockDataService {
     }
     
     /**
-     * Create comprehensive CFB teams if they don't exist in the database
+     * Verify teams exist in database (teams are now persistent via database initialization)
      */
     private void createMockTeamsIfNeeded() {
-        logger.info("MOCK_TEAMS_CHECK: Checking if teams exist in database");
+        logger.info("MOCK_TEAMS_CHECK: Verifying teams exist in database");
         
         try {
             List<Team> existingTeams = teamRepository.findAll();
             
-            if (!existingTeams.isEmpty()) {
-                logger.info("MOCK_TEAMS_EXISTS: Found {} existing teams, skipping team creation", existingTeams.size());
-                return;
+            if (existingTeams.isEmpty()) {
+                logger.error("TEAMS_MISSING: No teams found in database. Please ensure database initialization completed successfully.");
+                throw new RuntimeException("Teams not found in database. Database initialization may have failed.");
             }
             
-            logger.info("MOCK_TEAMS_CREATE: No teams found, creating comprehensive CFB team database");
-            
-            List<Team> teams = new ArrayList<>();
-            
-            // ACC Teams
-            teams.addAll(createAccTeams());
-            
-            // Big 12 Teams  
-            teams.addAll(createBig12Teams());
-            
-            // Big Ten Teams
-            teams.addAll(createBigTenTeams());
-            
-            // SEC Teams
-            teams.addAll(createSecTeams());
-            
-            // Group of 5 and Independent Teams
-            teams.addAll(createGroupOf5Teams());
-            
-            // Save all teams to database
-            List<Team> savedTeams = teamRepository.saveAll(teams);
-            
-            logger.info("MOCK_TEAMS_COMPLETE: Successfully created {} CFB teams across all conferences", savedTeams.size());
-            
-            // Log conference distribution
-            Map<String, Long> conferenceDistribution = savedTeams.stream()
-                .collect(Collectors.groupingBy(Team::getConference, Collectors.counting()));
-            
-            logger.info("MOCK_TEAMS_DISTRIBUTION: Teams by conference:");
-            conferenceDistribution.entrySet().stream()
-                .sorted(Map.Entry.<String, Long>comparingByValue().reversed())
-                .forEach(entry -> logger.info("  {}: {} teams", entry.getKey(), entry.getValue()));
+            logger.info("TEAMS_EXISTS: Found {} teams in database", existingTeams.size());
             
         } catch (Exception e) {
-            logger.error("FATAL_ERROR: Failed to create mock teams - {}", e.getMessage(), e);
-            throw e;
+            logger.error("ERROR: Failed to verify teams in database - {}", e.getMessage(), e);
+            throw new RuntimeException("Failed to verify teams in database", e);
         }
-    }
-    
-    /**
-     * Create ACC Conference teams
-     */
-    private List<Team> createAccTeams() {
-        List<Team> teams = new ArrayList<>();
-        
-        teams.add(createTeam("Boston College Eagles", "Bill O'Brien", "ACC", "bc_eagles"));
-        teams.add(createTeam("Clemson Tigers", "Dabo Swinney", "ACC", "clemson_tigers"));
-        teams.add(createTeam("Duke Blue Devils", "Manny Diaz", "ACC", "duke_blue_devils"));
-        teams.add(createTeam("Florida State Seminoles", "Mike Norvell", "ACC", "fsu_seminoles"));
-        teams.add(createTeam("Georgia Tech Yellow Jackets", "Brent Key", "ACC", "gt_yellow_jackets"));
-        teams.add(createTeam("Louisville Cardinals", "Jeff Brohm", "ACC", "louisville_cardinals"));
-        teams.add(createTeam("Miami Hurricanes", "Mario Cristobal", "ACC", "miami_hurricanes"));
-        teams.add(createTeam("NC State Wolfpack", "Dave Doeren", "ACC", "ncstate_wolfpack"));
-        teams.add(createTeam("North Carolina Tar Heels", "Mack Brown", "ACC", "unc_tar_heels"));
-        teams.add(createTeam("Pittsburgh Panthers", "Pat Narduzzi", "ACC", "pitt_panthers"));
-        teams.add(createTeam("Syracuse Orange", "Fran Brown", "ACC", "syracuse_orange"));
-        teams.add(createTeam("Virginia Cavaliers", "Tony Elliott", "ACC", "uva_cavaliers"));
-        teams.add(createTeam("Virginia Tech Hokies", "Brent Pry", "ACC", "vt_hokies"));
-        teams.add(createTeam("Wake Forest Demon Deacons", "Dave Clawson", "ACC", "wake_forest"));
-        
-        return teams;
-    }
-    
-    /**
-     * Create Big 12 Conference teams
-     */
-    private List<Team> createBig12Teams() {
-        List<Team> teams = new ArrayList<>();
-        
-        teams.add(createTeam("Arizona Wildcats", "Brent Brennan", "Big 12", "arizona_wildcats"));
-        teams.add(createTeam("Arizona State Sun Devils", "Kenny Dillingham", "Big 12", "asu_sun_devils"));
-        teams.add(createTeam("Baylor Bears", "Dave Aranda", "Big 12", "baylor_bears"));
-        teams.add(createTeam("BYU Cougars", "Kalani Sitake", "Big 12", "byu_cougars"));
-        teams.add(createTeam("Cincinnati Bearcats", "Scott Satterfield", "Big 12", "cincinnati_bearcats"));
-        teams.add(createTeam("Colorado Buffaloes", "Deion Sanders", "Big 12", "colorado_buffaloes"));
-        teams.add(createTeam("Houston Cougars", "Willie Fritz", "Big 12", "houston_cougars"));
-        teams.add(createTeam("Iowa State Cyclones", "Matt Campbell", "Big 12", "iowa_state_cyclones"));
-        teams.add(createTeam("Kansas Jayhawks", "Lance Leipold", "Big 12", "kansas_jayhawks"));
-        teams.add(createTeam("Kansas State Wildcats", "Chris Klieman", "Big 12", "ksu_wildcats"));
-        teams.add(createTeam("Oklahoma State Cowboys", "Mike Gundy", "Big 12", "okstate_cowboys"));
-        teams.add(createTeam("TCU Horned Frogs", "Sonny Dykes", "Big 12", "tcu_horned_frogs"));
-        teams.add(createTeam("Texas Tech Red Raiders", "Joey McGuire", "Big 12", "texas_tech"));
-        teams.add(createTeam("UCF Knights", "Gus Malzahn", "Big 12", "ucf_knights"));
-        teams.add(createTeam("Utah Utes", "Kyle Whittingham", "Big 12", "utah_utes"));
-        teams.add(createTeam("West Virginia Mountaineers", "Neal Brown", "Big 12", "wvu_mountaineers"));
-        
-        return teams;
-    }
-    
-    /**
-     * Create Big Ten Conference teams
-     */
-    private List<Team> createBigTenTeams() {
-        List<Team> teams = new ArrayList<>();
-        
-        teams.add(createTeam("Illinois Fighting Illini", "Bret Bielema", "Big Ten", "illinois_illini"));
-        teams.add(createTeam("Indiana Hoosiers", "Curt Cignetti", "Big Ten", "indiana_hoosiers"));
-        teams.add(createTeam("Iowa Hawkeyes", "Kirk Ferentz", "Big Ten", "iowa_hawkeyes"));
-        teams.add(createTeam("Maryland Terrapins", "Mike Locksley", "Big Ten", "maryland_terrapins"));
-        teams.add(createTeam("Michigan Wolverines", "Sherrone Moore", "Big Ten", "michigan_wolverines"));
-        teams.add(createTeam("Michigan State Spartans", "Jonathan Smith", "Big Ten", "msu_spartans"));
-        teams.add(createTeam("Minnesota Golden Gophers", "P.J. Fleck", "Big Ten", "minnesota_gophers"));
-        teams.add(createTeam("Nebraska Cornhuskers", "Matt Rhule", "Big Ten", "nebraska_cornhuskers"));
-        teams.add(createTeam("Northwestern Wildcats", "David Braun", "Big Ten", "northwestern_wildcats"));
-        teams.add(createTeam("Ohio State Buckeyes", "Ryan Day", "Big Ten", "osu_buckeyes"));
-        teams.add(createTeam("Oregon Ducks", "Dan Lanning", "Big Ten", "oregon_ducks"));
-        teams.add(createTeam("Penn State Nittany Lions", "James Franklin", "Big Ten", "psu_nittany_lions"));
-        teams.add(createTeam("Purdue Boilermakers", "Ryan Walters", "Big Ten", "purdue_boilermakers"));
-        teams.add(createTeam("Rutgers Scarlet Knights", "Greg Schiano", "Big Ten", "rutgers_knights"));
-        teams.add(createTeam("UCLA Bruins", "DeShaun Foster", "Big Ten", "ucla_bruins"));
-        teams.add(createTeam("USC Trojans", "Lincoln Riley", "Big Ten", "usc_trojans"));
-        teams.add(createTeam("Washington Huskies", "Jedd Fisch", "Big Ten", "washington_huskies"));
-        teams.add(createTeam("Wisconsin Badgers", "Luke Fickell", "Big Ten", "wisconsin_badgers"));
-        
-        return teams;
-    }
-    
-    /**
-     * Create SEC Conference teams
-     */
-    private List<Team> createSecTeams() {
-        List<Team> teams = new ArrayList<>();
-        
-        teams.add(createTeam("Alabama Crimson Tide", "Kalen DeBoer", "SEC", "alabama_tide"));
-        teams.add(createTeam("Arkansas Razorbacks", "Sam Pittman", "SEC", "arkansas_razorbacks"));
-        teams.add(createTeam("Auburn Tigers", "Hugh Freeze", "SEC", "auburn_tigers"));
-        teams.add(createTeam("Florida Gators", "Billy Napier", "SEC", "florida_gators"));
-        teams.add(createTeam("Georgia Bulldogs", "Kirby Smart", "SEC", "georgia_bulldogs"));
-        teams.add(createTeam("Kentucky Wildcats", "Mark Stoops", "SEC", "kentucky_wildcats"));
-        teams.add(createTeam("LSU Tigers", "Brian Kelly", "SEC", "lsu_tigers"));
-        teams.add(createTeam("Mississippi State Bulldogs", "Jeff Lebby", "SEC", "msstate_bulldogs"));
-        teams.add(createTeam("Missouri Tigers", "Eli Drinkwitz", "SEC", "missouri_tigers"));
-        teams.add(createTeam("Ole Miss Rebels", "Lane Kiffin", "SEC", "ole_miss_rebels"));
-        teams.add(createTeam("Oklahoma Sooners", "Brent Venables", "SEC", "oklahoma_sooners"));
-        teams.add(createTeam("South Carolina Gamecocks", "Shane Beamer", "SEC", "scar_gamecocks"));
-        teams.add(createTeam("Tennessee Volunteers", "Josh Heupel", "SEC", "tennessee_vols"));
-        teams.add(createTeam("Texas A&M Aggies", "Mike Elko", "SEC", "tamu_aggies"));
-        teams.add(createTeam("Texas Longhorns", "Steve Sarkisian", "SEC", "texas_longhorns"));
-        teams.add(createTeam("Vanderbilt Commodores", "Clark Lea", "SEC", "vanderbilt_commodores"));
-        
-        return teams;
-    }
-    
-    /**
-     * Create Group of 5 and Independent teams
-     */
-    private List<Team> createGroupOf5Teams() {
-        List<Team> teams = new ArrayList<>();
-        
-        // American Athletic Conference
-        teams.add(createTeam("Army Black Knights", "Jeff Monken", "American", "army_black_knights"));
-        teams.add(createTeam("East Carolina Pirates", "Mike Houston", "American", "ecu_pirates"));
-        teams.add(createTeam("Memphis Tigers", "Ryan Silverfield", "American", "memphis_tigers"));
-        teams.add(createTeam("Navy Midshipmen", "Brian Newberry", "American", "navy_midshipmen"));
-        teams.add(createTeam("SMU Mustangs", "Rhett Lashlee", "American", "smu_mustangs"));
-        teams.add(createTeam("South Florida Bulls", "Alex Golesh", "American", "usf_bulls"));
-        teams.add(createTeam("Temple Owls", "Stan Drayton", "American", "temple_owls"));
-        teams.add(createTeam("Tulane Green Wave", "Jon Sumrall", "American", "tulane_green_wave"));
-        teams.add(createTeam("Tulsa Golden Hurricane", "Kevin Wilson", "American", "tulsa_hurricane"));
-        
-        // Conference USA
-        teams.add(createTeam("Florida International Panthers", "Mike MacIntyre", "C-USA", "fiu_panthers"));
-        teams.add(createTeam("Liberty Flames", "Jamey Chadwell", "C-USA", "liberty_flames"));
-        teams.add(createTeam("Middle Tennessee Blue Raiders", "Derek Mason", "C-USA", "mtsu_raiders"));
-        teams.add(createTeam("New Mexico State Aggies", "Tony Sanchez", "C-USA", "nmsu_aggies"));
-        teams.add(createTeam("UTEP Miners", "Scotty Walden", "C-USA", "utep_miners"));
-        teams.add(createTeam("Western Kentucky Hilltoppers", "Tyson Helton", "C-USA", "wku_hilltoppers"));
-        
-        // MAC
-        teams.add(createTeam("Akron Zips", "Joe Moorhead", "MAC", "akron_zips"));
-        teams.add(createTeam("Ball State Cardinals", "Mike Neu", "MAC", "ball_state"));
-        teams.add(createTeam("Bowling Green Falcons", "Scot Loeffler", "MAC", "bgsu_falcons"));
-        teams.add(createTeam("Buffalo Bulls", "Pete Lembo", "MAC", "buffalo_bulls"));
-        teams.add(createTeam("Central Michigan Chippewas", "Jim McElwain", "MAC", "cmu_chippewas"));
-        teams.add(createTeam("Eastern Michigan Eagles", "Chris Creighton", "MAC", "emu_eagles"));
-        teams.add(createTeam("Kent State Golden Flashes", "Kenni Burns", "MAC", "kent_state"));
-        teams.add(createTeam("Miami RedHawks", "Chuck Martin", "MAC", "miami_oh"));
-        teams.add(createTeam("Northern Illinois Huskies", "Thomas Hammock", "MAC", "niu_huskies"));
-        teams.add(createTeam("Ohio Bobcats", "Tim Albin", "MAC", "ohio_bobcats"));
-        teams.add(createTeam("Toledo Rockets", "Jason Candle", "MAC", "toledo_rockets"));
-        teams.add(createTeam("Western Michigan Broncos", "Lance Taylor", "MAC", "wmu_broncos"));
-        
-        // Mountain West
-        teams.add(createTeam("Air Force Falcons", "Troy Calhoun", "Mountain West", "air_force"));
-        teams.add(createTeam("Boise State Broncos", "Spencer Danielson", "Mountain West", "boise_state"));
-        teams.add(createTeam("Colorado State Rams", "Jay Norvell", "Mountain West", "colorado_state"));
-        teams.add(createTeam("Fresno State Bulldogs", "Jeff Tedford", "Mountain West", "fresno_state"));
-        teams.add(createTeam("Hawaii Rainbow Warriors", "Timmy Chang", "Mountain West", "hawaii_warriors"));
-        teams.add(createTeam("Nevada Wolf Pack", "Jeff Choate", "Mountain West", "nevada_wolf_pack"));
-        teams.add(createTeam("New Mexico Lobos", "Bronco Mendenhall", "Mountain West", "new_mexico"));
-        teams.add(createTeam("San Diego State Aztecs", "Sean Lewis", "Mountain West", "sdsu_aztecs"));
-        teams.add(createTeam("San Jose State Spartans", "Ken Niumatalolo", "Mountain West", "sjsu_spartans"));
-        teams.add(createTeam("UNLV Rebels", "Barry Odom", "Mountain West", "unlv_rebels"));
-        teams.add(createTeam("Utah State Aggies", "Nate Dreiling", "Mountain West", "utah_state"));
-        teams.add(createTeam("Wyoming Cowboys", "Jay Sawvel", "Mountain West", "wyoming_cowboys"));
-        
-        // Sun Belt
-        teams.add(createTeam("Appalachian State Mountaineers", "Shawn Clark", "Sun Belt", "app_state"));
-        teams.add(createTeam("Arkansas State Red Wolves", "Butch Jones", "Sun Belt", "arkansas_state"));
-        teams.add(createTeam("Coastal Carolina Chanticleers", "Tim Beck", "Sun Belt", "coastal_carolina"));
-        teams.add(createTeam("Georgia Southern Eagles", "Clay Helton", "Sun Belt", "georgia_southern"));
-        teams.add(createTeam("Georgia State Panthers", "Dell McGee", "Sun Belt", "georgia_state"));
-        teams.add(createTeam("James Madison Dukes", "Bob Chesney", "Sun Belt", "jmu_dukes"));
-        teams.add(createTeam("Louisiana Ragin Cajuns", "Michael Desormeaux", "Sun Belt", "louisiana_cajuns"));
-        teams.add(createTeam("Louisiana Monroe Warhawks", "Bryant Vincent", "Sun Belt", "ulm_warhawks"));
-        teams.add(createTeam("Marshall Thundering Herd", "Charles Huff", "Sun Belt", "marshall_herd"));
-        teams.add(createTeam("Old Dominion Monarchs", "Ricky Rahne", "Sun Belt", "odu_monarchs"));
-        teams.add(createTeam("South Alabama Jaguars", "Major Applewhite", "Sun Belt", "south_alabama"));
-        teams.add(createTeam("Southern Miss Golden Eagles", "Will Hall", "Sun Belt", "southern_miss"));
-        teams.add(createTeam("Texas State Bobcats", "G.J. Kinne", "Sun Belt", "texas_state"));
-        teams.add(createTeam("Troy Trojans", "Jon Sumrall", "Sun Belt", "troy_trojans"));
-        
-        // Independents
-        teams.add(createTeam("Notre Dame Fighting Irish", "Marcus Freeman", "Independent", "notre_dame"));
-        teams.add(createTeam("UConn Huskies", "Jim Mora", "Independent", "uconn_huskies"));
-        teams.add(createTeam("UMass Minutemen", "Don Brown", "Independent", "umass_minutemen"));
-        
-        return teams;
-    }
-    
-    /**
-     * Helper method to create a team entity
-     */
-    private Team createTeam(String name, String coach, String conference, String username) {
-        Team team = new Team();
-        team.setName(name);
-        team.setCoach(coach);
-        team.setConference(conference);
-        team.setUsername(username);
-        team.setIsHuman(false); // All teams start as AI-controlled
-        team.setImageUrl("/images/teams/" + username + ".png");
-        team.setCreatedAt(LocalDateTime.now());
-        team.setUpdatedAt(LocalDateTime.now());
-        return team;
     }
     
     private void createMockWeeks() {

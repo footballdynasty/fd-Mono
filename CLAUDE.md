@@ -61,6 +61,10 @@ npm run test:e2e:debug     # Debug Playwright tests
 ./start.sh production      # Production mode
 ```
 
+## Development Memories
+- use ./start.sh to run our backend and frontend!
+- Dont start the services unless I tell you to
+
 ## Environment Setup
 
 **Database**: PostgreSQL database `fd_db` with user `fd_user`

@@ -21,10 +21,18 @@ spring:
     hibernate:
       ddl-auto: update
     show-sql: false
+    defer-datasource-initialization: true
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true
+        
+  # SQL initialization disabled - using custom TeamInitializationService instead
+  # sql:
+  #   init:
+  #     mode: embedded  
+  #     data-locations: classpath:cfb_teams.sql
+  #     continue-on-error: false
 
 server:
   port: 8080

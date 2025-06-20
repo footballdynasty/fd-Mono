@@ -1,5 +1,6 @@
 -- CFB Teams Data for Football Dynasty
 -- Updated for 2024 season
+-- Teams are inserted only if they don't already exist (by username)
 
 INSERT INTO team (id, name, coach, conference, username, is_human, image_url) VALUES 
 -- ACC Teams
@@ -17,6 +18,9 @@ INSERT INTO team (id, name, coach, conference, username, is_human, image_url) VA
 (gen_random_uuid(), 'Virginia Cavaliers', 'Tony Elliott', 'ACC', 'uva_cavaliers', false, '/images/teams/virginia.png'),
 (gen_random_uuid(), 'Virginia Tech Hokies', 'Brent Pry', 'ACC', 'vt_hokies', false, '/images/teams/virginia_tech.png'),
 (gen_random_uuid(), 'Wake Forest Demon Deacons', 'Dave Clawson', 'ACC', 'wake_forest', false, '/images/teams/wake_forest.png'),
+(gen_random_uuid(), 'California Golden Bears', 'Justin Wilcox', 'ACC', 'cal_golden_bears', false, '/images/teams/california.png'),
+(gen_random_uuid(), 'Stanford Cardinal', 'Troy Taylor', 'ACC', 'stanford_cardinal', false, '/images/teams/stanford.png'),
+(gen_random_uuid(), 'SMU Mustangs', 'Rhett Lashlee', 'ACC', 'smu_mustangs', false, '/images/teams/smu.png'),
 
 -- Big 12 Teams
 (gen_random_uuid(), 'Arizona Wildcats', 'Brent Brennan', 'Big 12', 'arizona_wildcats', false, '/images/teams/arizona.png'),
@@ -77,20 +81,29 @@ INSERT INTO team (id, name, coach, conference, username, is_human, image_url) VA
 -- Group of 5 Teams (Major ones)
 -- American Athletic Conference
 (gen_random_uuid(), 'Army Black Knights', 'Jeff Monken', 'American', 'army_black_knights', false, '/images/teams/army.png'),
+(gen_random_uuid(), 'Charlotte 49ers', 'Biff Poggi', 'American', 'charlotte_49ers', false, '/images/teams/charlotte.png'),
 (gen_random_uuid(), 'East Carolina Pirates', 'Mike Houston', 'American', 'ecu_pirates', false, '/images/teams/east_carolina.png'),
+(gen_random_uuid(), 'Florida Atlantic Owls', 'Tom Herman', 'American', 'fau_owls', false, '/images/teams/florida_atlantic.png'),
 (gen_random_uuid(), 'Memphis Tigers', 'Ryan Silverfield', 'American', 'memphis_tigers', false, '/images/teams/memphis.png'),
 (gen_random_uuid(), 'Navy Midshipmen', 'Brian Newberry', 'American', 'navy_midshipmen', false, '/images/teams/navy.png'),
-(gen_random_uuid(), 'SMU Mustangs', 'Rhett Lashlee', 'American', 'smu_mustangs', false, '/images/teams/smu.png'),
+(gen_random_uuid(), 'North Texas Mean Green', 'Eric Morris', 'American', 'north_texas', false, '/images/teams/north_texas.png'),
+(gen_random_uuid(), 'Rice Owls', 'Mike Bloomgren', 'American', 'rice_owls', false, '/images/teams/rice.png'),
 (gen_random_uuid(), 'South Florida Bulls', 'Alex Golesh', 'American', 'usf_bulls', false, '/images/teams/south_florida.png'),
 (gen_random_uuid(), 'Temple Owls', 'Stan Drayton', 'American', 'temple_owls', false, '/images/teams/temple.png'),
 (gen_random_uuid(), 'Tulane Green Wave', 'Jon Sumrall', 'American', 'tulane_green_wave', false, '/images/teams/tulane.png'),
 (gen_random_uuid(), 'Tulsa Golden Hurricane', 'Kevin Wilson', 'American', 'tulsa_hurricane', false, '/images/teams/tulsa.png'),
+(gen_random_uuid(), 'UAB Blazers', 'Trent Dilfer', 'American', 'uab_blazers', false, '/images/teams/uab.png'),
+(gen_random_uuid(), 'UTSA Roadrunners', 'Jeff Traylor', 'American', 'utsa_roadrunners', false, '/images/teams/utsa.png'),
 
 -- Conference USA
 (gen_random_uuid(), 'Florida International Panthers', 'Mike MacIntyre', 'C-USA', 'fiu_panthers', false, '/images/teams/fiu.png'),
+(gen_random_uuid(), 'Jacksonville State Gamecocks', 'Rich Rodriguez', 'C-USA', 'jsu_gamecocks', false, '/images/teams/jacksonville_state.png'),
+(gen_random_uuid(), 'Kennesaw State Owls', 'Brian Bohannon', 'C-USA', 'kennesaw_state', false, '/images/teams/kennesaw_state.png'),
 (gen_random_uuid(), 'Liberty Flames', 'Jamey Chadwell', 'C-USA', 'liberty_flames', false, '/images/teams/liberty.png'),
+(gen_random_uuid(), 'Louisiana Tech Bulldogs', 'Sonny Cumbie', 'C-USA', 'la_tech', false, '/images/teams/louisiana_tech.png'),
 (gen_random_uuid(), 'Middle Tennessee Blue Raiders', 'Derek Mason', 'C-USA', 'mtsu_raiders', false, '/images/teams/middle_tennessee.png'),
 (gen_random_uuid(), 'New Mexico State Aggies', 'Tony Sanchez', 'C-USA', 'nmsu_aggies', false, '/images/teams/new_mexico_state.png'),
+(gen_random_uuid(), 'Sam Houston Bearkats', 'K.C. Keeler', 'C-USA', 'sam_houston', false, '/images/teams/sam_houston.png'),
 (gen_random_uuid(), 'UTEP Miners', 'Scotty Walden', 'C-USA', 'utep_miners', false, '/images/teams/utep.png'),
 (gen_random_uuid(), 'Western Kentucky Hilltoppers', 'Tyson Helton', 'C-USA', 'wku_hilltoppers', false, '/images/teams/western_kentucky.png'),
 
@@ -141,4 +154,5 @@ INSERT INTO team (id, name, coach, conference, username, is_human, image_url) VA
 -- Independents
 (gen_random_uuid(), 'Notre Dame Fighting Irish', 'Marcus Freeman', 'Independent', 'notre_dame', false, '/images/teams/notre_dame.png'),
 (gen_random_uuid(), 'UConn Huskies', 'Jim Mora', 'Independent', 'uconn_huskies', false, '/images/teams/uconn.png'),
-(gen_random_uuid(), 'UMass Minutemen', 'Don Brown', 'Independent', 'umass_minutemen', false, '/images/teams/umass.png');
+(gen_random_uuid(), 'UMass Minutemen', 'Don Brown', 'Independent', 'umass_minutemen', false, '/images/teams/umass.png')
+ON CONFLICT (username) DO NOTHING;

@@ -24,6 +24,7 @@ public class Team {
     
     private String coach;
     
+    @Column(nullable = false, unique = true)
     private String username;
     
     private String conference;

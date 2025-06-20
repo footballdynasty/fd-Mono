@@ -85,15 +85,19 @@ jobs:
     - name: Run backend tests with profile ${{ matrix.profile }}
       working-directory: ./backend
       env:
-        SPRING_PROFILES_ACTIVE: ${{ matrix.profile }}
-        DB_HOST: localhost
-        DB_PORT: 5432
-        DB_NAME: fd_test_db
-        DB_USERNAME: fd_test_user
-        DB_PASSWORD: test_password
+        SPRING_PROFILES_ACTIVE: ${{ matrix.profile == 'test' && 'test' || 'testing' }}
+        DB_HOST: ${{ matrix.profile == 'testing' && 'localhost' || '' }}
+        DB_PORT: ${{ matrix.profile == 'testing' && '5432' || '' }}
+        DB_NAME: ${{ matrix.profile == 'testing' && 'fd_test_db' || '' }}
+        DB_USERNAME: ${{ matrix.profile == 'testing' && 'fd_test_user' || '' }}
+        DB_PASSWORD: ${{ matrix.profile == 'testing' && 'test_password' || '' }}
         SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
       run: |
-        mvn clean test -P${{ matrix.profile }} jacoco:report
+        if [ "${{ matrix.profile }}" = "test" ]; then
+          mvn clean test jacoco:report
+        else
+          mvn clean test -P${{ matrix.profile }} jacoco:report
+        fi
         
     - name: Upload backend coverage
       uses: codecov/codecov-action@v4

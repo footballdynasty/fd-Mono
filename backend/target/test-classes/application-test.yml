@@ -31,3 +31,14 @@ logging:
 server:
   servlet:
     context-path: /api/v2
+
+sentry:
+  enabled: false
+
+# Test environment configuration
+current:
+  environment: test
+  
+mock:
+  data:
+    enabled: false
