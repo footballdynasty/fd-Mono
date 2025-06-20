@@ -95,11 +95,12 @@ class StandingControllerIntegrationTest {
     @Test
     @WithMockUser
     void testGetAllStandingsWithYearFilter() throws Exception {
+        int currentYear = java.time.LocalDateTime.now().getYear();
         mockMvc.perform(get("/standings")
-                        .param("year", "2024"))
+                        .param("year", String.valueOf(currentYear)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content", hasSize(1)))
-                .andExpect(jsonPath("$.content[0].year", is(2024)));
+                .andExpect(jsonPath("$.content[0].year", is(currentYear)));
     }
 
     @Test
@@ -115,8 +116,9 @@ class StandingControllerIntegrationTest {
     @Test
     @WithMockUser
     void testGetAllStandingsWithYearAndConferenceFilter() throws Exception {
+        int currentYear = java.time.LocalDateTime.now().getYear();
         mockMvc.perform(get("/standings")
-                        .param("year", "2024")
+                        .param("year", String.valueOf(currentYear))
                         .param("conference", "ACC"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content", hasSize(1)));
@@ -125,10 +127,11 @@ class StandingControllerIntegrationTest {
     @Test
     @WithMockUser
     void testGetStandingById() throws Exception {
+        int currentYear = java.time.LocalDateTime.now().getYear();
         mockMvc.perform(get("/standings/{id}", testStanding.getId()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id", is(testStanding.getId().toString())))
-                .andExpect(jsonPath("$.year", is(2024)))
+                .andExpect(jsonPath("$.year", is(currentYear)))
                 .andExpect(jsonPath("$.wins", is(8)))
                 .andExpect(jsonPath("$.losses", is(3)))
                 .andExpect(jsonPath("$.team.name", is("Test Team")));
@@ -163,10 +166,11 @@ class StandingControllerIntegrationTest {
     @Test
     @WithMockUser
     void testGetStandingByTeamAndYear() throws Exception {
-        mockMvc.perform(get("/standings/team/{teamId}/year/{year}", testTeam.getId(), 2024))
+        int currentYear = java.time.LocalDateTime.now().getYear();
+        mockMvc.perform(get("/standings/team/{teamId}/year/{year}", testTeam.getId(), currentYear))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.team.id", is(testTeam.getId().toString())))
-                .andExpect(jsonPath("$.year", is(2024)));
+                .andExpect(jsonPath("$.year", is(currentYear)));
     }
 
     @Test
@@ -179,17 +183,19 @@ class StandingControllerIntegrationTest {
     @Test
     @WithMockUser
     void testGetConferenceStandings() throws Exception {
-        mockMvc.perform(get("/standings/conference/{conference}/year/{year}", "ACC", 2024))
+        int currentYear = java.time.LocalDateTime.now().getYear();
+        mockMvc.perform(get("/standings/conference/{conference}/year/{year}", "ACC", currentYear))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(1)))
                 .andExpect(jsonPath("$[0].team.conference", is("ACC")))
-                .andExpect(jsonPath("$[0].year", is(2024)));
+                .andExpect(jsonPath("$[0].year", is(currentYear)));
     }
 
     @Test
     @WithMockUser
     void testGetTopRankedTeams() throws Exception {
-        mockMvc.perform(get("/standings/ranked/year/{year}", 2024)
+        int currentYear = java.time.LocalDateTime.now().getYear();
+        mockMvc.perform(get("/standings/ranked/year/{year}", currentYear)
                         .param("limit", "25"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(1)))
@@ -199,10 +205,11 @@ class StandingControllerIntegrationTest {
     @Test
     @WithMockUser
     void testGetTeamsReceivingVotes() throws Exception {
-        mockMvc.perform(get("/standings/votes/year/{year}", 2024))
+        int currentYear = java.time.LocalDateTime.now().getYear();
+        mockMvc.perform(get("/standings/votes/year/{year}", currentYear))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(1)))
-                .andExpect(jsonPath("$[0].votes", is(25)));
+                .andExpect(jsonPath("$[0].receiving_votes", is(25)));
     }
 
     @Test
@@ -329,6 +336,7 @@ class StandingControllerIntegrationTest {
     @Test
     @WithMockUser
     void testPaginationFunctionality() throws Exception {
+        int currentYear = java.time.LocalDateTime.now().getYear();
         // Create additional standings for pagination test
         for (int i = 0; i < 15; i++) {
             Team team = new Team();
@@ -341,14 +349,14 @@ class StandingControllerIntegrationTest {
 
             Standing standing = new Standing();
             standing.setTeam(team);
-            standing.setYear(2024);
-            standing.setWins(10 - i);
+            standing.setYear(currentYear);
+            standing.setWins(Math.max(0, 10 - i));  // Ensure non-negative wins
             standing.setLosses(i);
-            standing.setConferenceWins(8 - i);
+            standing.setConferenceWins(Math.max(0, 8 - i));  // Ensure non-negative conference wins
             standing.setConferenceLosses(i);
             standing.setRank(i + 1);
             standing.setConferenceRank(i + 1);
-            standing.setReceivingVotes(100 - (i * 5));
+            standing.setReceivingVotes(Math.max(0, 100 - (i * 5)));  // Ensure non-negative votes
             standingRepository.save(standing);
         }
 

@@ -119,8 +119,11 @@ public class StandingServiceImpl implements StandingService {
     public Page<StandingDTO> findByTeam(UUID teamId, Pageable pageable) {
         logger.info("Finding standings for team: {}", teamId);
         
-        Team team = teamRepository.findById(teamId)
-            .orElseThrow(() -> new ResourceNotFoundException("Team not found with id: " + teamId));
+        Team team = teamRepository.findById(teamId).orElse(null);
+        if (team == null) {
+            logger.debug("Team not found with id: {}, returning empty page", teamId);
+            return Page.empty(pageable);
+        }
         
         // Sort by year descending to show most recent first
         Pageable sortedPageable = PageRequest.of(
