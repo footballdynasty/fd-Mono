@@ -1,6 +1,6 @@
 import axios from 'axios';
 import * as Sentry from '@sentry/react';
-import type { PaginatedResponse, Team, Game, Standing, Achievement, AchievementReward, AchievementCompletionResponse, LoginRequest, RegisterRequest, AuthResponse, StandingCreateRequest, StandingUpdateRequest } from '../types';
+import type { PaginatedResponse, Team, Game, Standing, Achievement, AchievementReward, AchievementCompletionResponse, LoginRequest, RegisterRequest, AuthResponse, StandingCreateRequest, StandingUpdateRequest, Notification, NotificationStats, AchievementRequest } from '../types';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8080/api/v2';
 
@@ -201,6 +201,16 @@ export const achievementApi = {
       isAdmin: userContext?.isAdmin || false,
       requestReason: userContext?.requestReason || 'Achievement completed'
     }),
+
+  submitRequest: (achievementId: string, userContext?: { userId?: string; userDisplayName?: string; teamId?: string; teamName?: string; requestReason?: string }) =>
+    api.post<AchievementCompletionResponse>('/achievements/submit-request', {
+      achievementId,
+      userId: userContext?.userId || 'guest-user',
+      userDisplayName: userContext?.userDisplayName || 'Guest User',
+      teamId: userContext?.teamId || '',
+      teamName: userContext?.teamName || '',
+      requestReason: userContext?.requestReason || 'Achievement completed'
+    }),
   
   delete: (id: string) =>
     api.delete(`/achievements/${id}`),
@@ -269,6 +279,71 @@ export const authApi = {
   
   refreshToken: () =>
     api.post('/auth/refresh'),
+};
+
+// Inbox API for admin achievement request management
+export const inboxApi = {
+  // Get pending achievement requests (admin only)
+  getPendingRequests: () =>
+    api.get<{
+      requests: AchievementRequest[];
+      count: number;
+      timestamp: number;
+    }>('/admin/inbox/requests'),
+  
+  // Approve achievement request (admin only)
+  approveRequest: (requestId: string, adminNotes?: string) =>
+    api.post<{ message: string; request: AchievementRequest }>(`/admin/inbox/requests/${requestId}/approve`, {
+      adminNotes: adminNotes || ''
+    }),
+  
+  // Reject achievement request (admin only)
+  rejectRequest: (requestId: string, adminNotes?: string) =>
+    api.post<{ message: string; request: AchievementRequest }>(`/admin/inbox/requests/${requestId}/reject`, {
+      adminNotes: adminNotes || ''
+    }),
+  
+  // Get inbox statistics (admin only)
+  getStatistics: () =>
+    api.get<{
+      pendingRequests: number;
+      approvedRequests: number;
+      rejectedRequests: number;
+      totalRequests: number;
+      recentRequests: number;
+    }>('/admin/inbox/statistics'),
+};
+
+// Notification API for real-time notifications
+export const notificationApi = {
+  // Get user notifications
+  getAll: (params?: { unreadOnly?: boolean; limit?: number; page?: number }) =>
+    api.get<{ notifications: Notification[]; stats: NotificationStats }>('/notifications', { params }),
+  
+  // Get notification statistics
+  getStats: () =>
+    api.get<NotificationStats>('/notifications/stats'),
+  
+  // Mark notification as read
+  markAsRead: (notificationId: string) =>
+    api.patch<{ message: string }>(`/notifications/${notificationId}/read`),
+  
+  // Mark all notifications as read
+  markAllAsRead: () =>
+    api.patch<{ message: string; count: number }>('/notifications/read-all'),
+  
+  // Delete notification
+  delete: (notificationId: string) =>
+    api.delete<{ message: string }>(`/notifications/${notificationId}`),
+  
+  // Get inbox count for navbar badge (combines notifications and admin requests)
+  getInboxCount: () =>
+    api.get<{ 
+      notifications: number; 
+      achievementRequests: number; 
+      total: number; 
+      isAdmin: boolean;
+    }>('/notifications/inbox-count'),
 };
 
 export default api;

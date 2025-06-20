@@ -24,12 +24,15 @@ public class InboxService {
     
     private final AchievementRequestRepository requestRepository;
     private final AchievementRepository achievementRepository;
+    private final NotificationService notificationService;
     
     @Autowired
     public InboxService(AchievementRequestRepository requestRepository,
-                       AchievementRepository achievementRepository) {
+                       AchievementRepository achievementRepository,
+                       NotificationService notificationService) {
         this.requestRepository = requestRepository;
         this.achievementRepository = achievementRepository;
+        this.notificationService = notificationService;
     }
     
     /**
@@ -63,6 +66,9 @@ public class InboxService {
         AchievementRequest savedRequest = requestRepository.save(request);
         logger.info("Achievement request created: {} for user: {} achievement: {}", 
                    savedRequest.getId(), userId, achievement.getDescription());
+        
+        // Create notification for admins
+        notificationService.createAchievementRequestNotification(savedRequest, achievement);
         
         return savedRequest;
     }
@@ -129,6 +135,9 @@ public class InboxService {
         logger.info("Achievement request approved: {} for achievement: {} by admin: {}", 
                    requestId, achievement.getDescription(), adminUserId);
         
+        // Create notification for user
+        notificationService.createAchievementApprovedNotification(savedRequest, achievement);
+        
         return savedRequest;
     }
     
@@ -154,6 +163,9 @@ public class InboxService {
         
         logger.info("Achievement request rejected: {} for achievement: {} by admin: {}", 
                    requestId, request.getAchievement().getDescription(), adminUserId);
+        
+        // Create notification for user
+        notificationService.createAchievementRejectedNotification(savedRequest, request.getAchievement());
         
         return savedRequest;
     }

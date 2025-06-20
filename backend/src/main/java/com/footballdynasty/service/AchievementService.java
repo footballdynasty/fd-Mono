@@ -27,11 +27,13 @@ public class AchievementService {
     
     private final AchievementRepository achievementRepository;
     private final AchievementMapper achievementMapper;
+    private final NotificationService notificationService;
     
     @Autowired
-    public AchievementService(AchievementRepository achievementRepository, AchievementMapper achievementMapper) {
+    public AchievementService(AchievementRepository achievementRepository, AchievementMapper achievementMapper, NotificationService notificationService) {
         this.achievementRepository = achievementRepository;
         this.achievementMapper = achievementMapper;
+        this.notificationService = notificationService;
     }
     
     /**
@@ -145,6 +147,13 @@ public class AchievementService {
      * Mark achievement as completed
      */
     public AchievementDTO completeAchievement(UUID id) {
+        return completeAchievement(id, null);
+    }
+    
+    /**
+     * Mark achievement as completed with user context for notifications
+     */
+    public AchievementDTO completeAchievement(UUID id, Long userId) {
         logger.info("Completing achievement with ID: {}", id);
         
         Achievement achievement = achievementRepository.findById(id)
@@ -160,6 +169,11 @@ public class AchievementService {
         
         Achievement completedAchievement = achievementRepository.save(achievement);
         logger.info("Achievement completed: {} - {}", completedAchievement.getDescription(), completedAchievement.getReward());
+        
+        // Create notification if user context is provided
+        if (userId != null) {
+            notificationService.createAchievementCompletedNotification(userId, completedAchievement);
+        }
         
         return achievementMapper.toDTO(completedAchievement);
     }

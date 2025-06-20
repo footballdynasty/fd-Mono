@@ -151,6 +151,56 @@ public class AchievementController {
         return ResponseEntity.ok(updatedAchievement);
     }
     
+    @Operation(summary = "Submit achievement completion request")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Achievement request submitted successfully"),
+        @ApiResponse(responseCode = "404", description = "Achievement not found"),
+        @ApiResponse(responseCode = "400", description = "Invalid request or duplicate request")
+    })
+    @PostMapping("/submit-request")
+    public ResponseEntity<?> submitAchievementRequest(@RequestBody Map<String, String> requestBody) {
+        
+        logger.info("POST /achievements/submit-request");
+        
+        try {
+            // Extract request data
+            String achievementIdStr = requestBody.get("achievementId");
+            if (achievementIdStr == null) {
+                return ResponseEntity.badRequest().body(Map.of("error", "achievementId is required"));
+            }
+            
+            UUID achievementId = UUID.fromString(achievementIdStr);
+            String userId = requestBody.getOrDefault("userId", "user");
+            String userDisplayName = requestBody.getOrDefault("userDisplayName", "Anonymous User");
+            String teamId = requestBody.getOrDefault("teamId", "");
+            String teamName = requestBody.getOrDefault("teamName", "");
+            String requestReason = requestBody.getOrDefault("requestReason", "Achievement completed");
+            
+            // Submit request (regular users only - this endpoint is for non-admin requests)
+            logger.info("Regular user submitting achievement request: {} by user: {}", achievementId, userId);
+            var request = inboxService.submitAchievementRequest(achievementId, userId, userDisplayName, teamId, teamName, requestReason);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("requestId", request.getId());
+            response.put("status", "pending");
+            response.put("message", "Achievement completion request submitted for admin review");
+            response.put("timestamp", System.currentTimeMillis());
+            
+            return ResponseEntity.ok(response);
+            
+        } catch (IllegalStateException e) {
+            logger.warn("Achievement completion request failed: {}", e.getMessage());
+            Map<String, String> error = new HashMap<>();
+            error.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(error);
+        } catch (Exception e) {
+            logger.error("Failed to process achievement completion request: {}", e.getMessage(), e);
+            Map<String, String> error = new HashMap<>();
+            error.put("message", "Failed to process achievement request: " + e.getMessage());
+            return ResponseEntity.status(500).body(error);
+        }
+    }
+
     @Operation(summary = "Request achievement completion")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "Achievement request submitted successfully"),
@@ -179,7 +229,8 @@ public class AchievementController {
             if (isCommissioner) {
                 // Commissioner users can complete achievements directly
                 logger.info("Commissioner user completing achievement directly: {}", id);
-                AchievementDTO completedAchievement = achievementService.completeAchievement(id);
+                Long userLong = Long.parseLong(userId);
+                AchievementDTO completedAchievement = achievementService.completeAchievement(id, userLong);
                 
                 Map<String, Object> response = new HashMap<>();
                 response.put("achievement", completedAchievement);

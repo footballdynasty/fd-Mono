@@ -128,6 +128,7 @@ export interface Achievement {
 export interface AchievementRequest {
   id: string;
   achievementId: string;
+  achievementDescription: string;
   userId: string;
   userDisplayName: string;
   teamId?: string;
@@ -230,4 +231,38 @@ export interface AuthResponse {
   user: User;
   token: string;
   selectedTeam?: Team;
+}
+
+// Notification System Types
+export enum NotificationType {
+  ACHIEVEMENT_REQUEST = 'ACHIEVEMENT_REQUEST',
+  ACHIEVEMENT_COMPLETED = 'ACHIEVEMENT_COMPLETED', 
+  ACHIEVEMENT_APPROVED = 'ACHIEVEMENT_APPROVED',
+  ACHIEVEMENT_REJECTED = 'ACHIEVEMENT_REJECTED',
+  GENERAL = 'GENERAL',
+}
+
+export interface Notification {
+  id: string;
+  type: NotificationType;
+  title: string;
+  message: string;
+  isRead: boolean;
+  createdAt: string;
+  data?: {
+    achievementId?: string;
+    achievementName?: string;
+    requestId?: string;
+    userId?: string;
+    userName?: string;
+    teamName?: string;
+    action?: string;
+    url?: string;
+  };
+}
+
+export interface NotificationStats {
+  total: number;
+  unread: number;
+  byType: Record<NotificationType, number>;
 }

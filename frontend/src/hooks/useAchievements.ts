@@ -139,11 +139,14 @@ export const useCompleteAchievement = () => {
         userDisplayName: user?.username || 'Guest User',
         teamId: selectedTeam?.id || '',
         teamName: selectedTeam?.name || '',
-        isAdmin: isCommissioner, // Use real commissioner permission
         requestReason: 'Achievement completed'
       };
       
-      const response = await achievementApi.complete(achievementId, userContext);
+      // Use different endpoints based on user role
+      const response = isCommissioner 
+        ? await achievementApi.complete(achievementId, { ...userContext, isAdmin: true })
+        : await achievementApi.submitRequest(achievementId, userContext);
+      
       return response.data;
     },
     onSuccess: (responseData) => {

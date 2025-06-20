@@ -7,12 +7,14 @@ import theme from './theme/theme';
 import { AuthProvider } from './hooks/useAuth';
 import { ToastProvider } from './contexts/ToastContext';
 import { PendingAchievementsProvider } from './contexts/PendingAchievementsContext';
+import { NotificationsProvider } from './contexts/NotificationsContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import Layout from './components/layout/Layout';
 import Dashboard from './pages/Dashboard';
 import StandingsPage from './pages/StandingsPage';
 import SchedulePage from './pages/SchedulePage';
 import AchievementsPage from './pages/AchievementsPage';
+import AdminInboxPage from './pages/AdminInboxPage';
 import TeamSelection from './pages/auth/TeamSelection';
 import Debug from './pages/Debug';
 
@@ -48,8 +50,9 @@ const App: React.FC = () => {
         />
         <ToastProvider>
           <AuthProvider>
-            <PendingAchievementsProvider>
-              <Router>
+            <NotificationsProvider>
+              <PendingAchievementsProvider>
+                <Router>
                 <ProtectedRoute>
                   <Layout>
                   <Routes>
@@ -57,6 +60,7 @@ const App: React.FC = () => {
                     <Route path="/standings" element={<StandingsPage />} />
                     <Route path="/schedule" element={<SchedulePage />} />
                     <Route path="/achievements" element={<AchievementsPage />} />
+                    <Route path="/admin/inbox" element={<AdminInboxPage />} />
                     <Route path="/teams" element={<div>Teams Page</div>} />
                     <Route path="/settings" element={<div>Settings Page</div>} />
                     {/* Debug Routes */}
@@ -65,8 +69,9 @@ const App: React.FC = () => {
                   </Routes>
                   </Layout>
                 </ProtectedRoute>
-              </Router>
-            </PendingAchievementsProvider>
+                </Router>
+              </PendingAchievementsProvider>
+            </NotificationsProvider>
           </AuthProvider>
         </ToastProvider>
       </ThemeProvider>

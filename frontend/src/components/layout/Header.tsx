@@ -6,7 +6,6 @@ import {
   Typography,
   Box,
   Avatar,
-  Badge,
   alpha,
   Menu,
   MenuItem,
@@ -15,13 +14,13 @@ import {
 } from '@mui/material';
 import {
   Menu as MenuIcon,
-  Notifications,
   Search,
   Logout,
   SportsFootball,
 } from '@mui/icons-material';
 import { motion } from 'framer-motion';
 import { useAuth } from '../../hooks/useAuth';
+import NotificationsDropdown from './NotificationsDropdown';
 
 interface HeaderProps {
   onMenuClick: () => void;
@@ -124,25 +123,7 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
         </motion.div>
 
         {/* Notifications */}
-        <motion.div
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-        >
-          <IconButton
-            color="inherit"
-            sx={{
-              mr: 2,
-              background: alpha('#ffffff', 0.1),
-              '&:hover': {
-                background: alpha('#ffffff', 0.2),
-              },
-            }}
-          >
-            <Badge badgeContent={3} color="error">
-              <Notifications />
-            </Badge>
-          </IconButton>
-        </motion.div>
+        <NotificationsDropdown />
 
         {/* User Avatar */}
         <motion.div

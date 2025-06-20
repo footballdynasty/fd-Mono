@@ -19,7 +19,7 @@ public class AchievementRequest {
     @JoinColumn(name = "achievement_id", nullable = false)
     private Achievement achievement;
     
-    @Column(name = "user_id", nullable = false)
+    @Column(name = "user_id", nullable = false, columnDefinition = "VARCHAR(255)")
     private String userId; // User who requested the achievement
     
     @Column(name = "user_display_name")
