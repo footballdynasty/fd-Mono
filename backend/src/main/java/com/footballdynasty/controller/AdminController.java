@@ -2,6 +2,7 @@ package com.footballdynasty.controller;
 
 import com.footballdynasty.dto.UserDTO;
 import com.footballdynasty.entity.User;
+import com.footballdynasty.entity.Role;
 import com.footballdynasty.entity.Game;
 import com.footballdynasty.entity.Team;
 import com.footballdynasty.entity.Week;
@@ -13,16 +14,24 @@ import com.footballdynasty.repository.TeamRepository;
 import com.footballdynasty.repository.WeekRepository;
 import com.footballdynasty.repository.StandingRepository;
 import com.footballdynasty.service.MockDataService;
+import com.footballdynasty.service.AchievementService;
+import com.footballdynasty.service.AchievementRewardService;
+import com.footballdynasty.service.InboxService;
 import com.footballdynasty.config.AppConfig;
+import com.footballdynasty.dto.AchievementDTO;
+import com.footballdynasty.dto.AchievementRewardDTO;
+import com.footballdynasty.dto.AchievementRequestDTO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import io.sentry.Sentry;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -49,12 +58,17 @@ public class AdminController {
     private final TeamRepository teamRepository;
     private final WeekRepository weekRepository;
     private final StandingRepository standingRepository;
+    private final AchievementService achievementService;
+    private final AchievementRewardService rewardService;
+    private final InboxService inboxService;
     
     @Autowired
     public AdminController(UserRepository userRepository, UserMapper userMapper, 
                           MockDataService mockDataService, AppConfig appConfig,
                           GameRepository gameRepository, TeamRepository teamRepository,
-                          WeekRepository weekRepository, StandingRepository standingRepository) {
+                          WeekRepository weekRepository, StandingRepository standingRepository,
+                          AchievementService achievementService, AchievementRewardService rewardService,
+                          InboxService inboxService) {
         this.userRepository = userRepository;
         this.userMapper = userMapper;
         this.mockDataService = mockDataService;
@@ -63,6 +77,9 @@ public class AdminController {
         this.teamRepository = teamRepository;
         this.weekRepository = weekRepository;
         this.standingRepository = standingRepository;
+        this.achievementService = achievementService;
+        this.rewardService = rewardService;
+        this.inboxService = inboxService;
     }
     
     @GetMapping("/users")
@@ -874,6 +891,832 @@ public class AdminController {
             return ResponseEntity.status(500).body(error);
         } finally {
             logger.info("ENDPOINT_EXIT: POST /admin/debug/create-non-conference-game");
+        }
+    }
+    
+    @PostMapping("/sentry/test-exception")
+    @Operation(summary = "Test Sentry exception capture", description = "Create a test exception to verify Sentry integration")
+    @ApiResponse(responseCode = "200", description = "Test exception sent to Sentry successfully")
+    public ResponseEntity<?> testSentryException() {
+        logger.info("SENTRY_TEST: Testing Sentry exception capture");
+        
+        try {
+            // Create a test exception with context
+            Exception testException = new Exception("Test exception from Spring Boot backend - This is intentional for Sentry testing");
+            
+            // Add additional context
+            Sentry.configureScope(scope -> {
+                scope.setTag("test_type", "backend_exception");
+                scope.setTag("endpoint", "/admin/sentry/test-exception");
+                scope.setLevel(io.sentry.SentryLevel.ERROR);
+                scope.setExtra("test_timestamp", String.valueOf(System.currentTimeMillis()));
+                scope.setExtra("environment", "testing");
+                scope.setExtra("user_triggered", "true");
+            });
+            
+            // Capture the exception
+            io.sentry.protocol.SentryId eventId = Sentry.captureException(testException);
+            
+            logger.info("SENTRY_EVENT_CAPTURED: Event ID: {}", eventId);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("message", "Test exception sent to Sentry successfully");
+            response.put("eventId", eventId.toString());
+            response.put("timestamp", System.currentTimeMillis());
+            response.put("sentryConfigured", true);
+            
+            return ResponseEntity.ok(response);
+            
+        } catch (Exception e) {
+            logger.error("SENTRY_TEST_ERROR: Failed to send test exception to Sentry - {}", e.getMessage(), e);
+            Map<String, String> error = new HashMap<>();
+            error.put("message", "Failed to send test exception to Sentry: " + e.getMessage());
+            return ResponseEntity.status(500).body(error);
+        }
+    }
+    
+    @PostMapping("/sentry/test-message")
+    @Operation(summary = "Test Sentry message capture", description = "Send a test message to Sentry")
+    @ApiResponse(responseCode = "200", description = "Test message sent to Sentry successfully")
+    public ResponseEntity<?> testSentryMessage() {
+        logger.info("SENTRY_TEST: Testing Sentry message capture");
+        
+        try {
+            // Configure scope for the message
+            Sentry.configureScope(scope -> {
+                scope.setTag("test_type", "backend_message");
+                scope.setTag("endpoint", "/admin/sentry/test-message");
+                scope.setLevel(io.sentry.SentryLevel.INFO);
+                scope.setExtra("test_timestamp", String.valueOf(System.currentTimeMillis()));
+                scope.setExtra("environment", "testing");
+                scope.setExtra("user_triggered", "true");
+            });
+            
+            // Send a test message
+            io.sentry.protocol.SentryId eventId = Sentry.captureMessage("Test message from Spring Boot backend - Sentry integration working correctly");
+            
+            logger.info("SENTRY_MESSAGE_CAPTURED: Event ID: {}", eventId);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("message", "Test message sent to Sentry successfully");
+            response.put("eventId", eventId.toString());
+            response.put("timestamp", System.currentTimeMillis());
+            response.put("sentryConfigured", true);
+            
+            return ResponseEntity.ok(response);
+            
+        } catch (Exception e) {
+            logger.error("SENTRY_MESSAGE_ERROR: Failed to send test message to Sentry - {}", e.getMessage(), e);
+            Map<String, String> error = new HashMap<>();
+            error.put("message", "Failed to send test message to Sentry: " + e.getMessage());
+            return ResponseEntity.status(500).body(error);
+        }
+    }
+    
+    @PostMapping("/sentry/test-span")
+    @Operation(summary = "Test Sentry span/performance tracking", description = "Create a test span to verify Sentry performance monitoring")
+    @ApiResponse(responseCode = "200", description = "Test span completed successfully")
+    public ResponseEntity<?> testSentrySpan() {
+        logger.info("SENTRY_TEST: Testing Sentry span/performance tracking");
+        
+        try {
+            // Start a transaction for performance monitoring
+            io.sentry.ITransaction transaction = Sentry.startTransaction("test-transaction", "backend-span-test");
+            
+            try {
+                // Set transaction data
+                transaction.setTag("test_type", "backend_span");
+                transaction.setTag("endpoint", "/admin/sentry/test-span");
+                transaction.setData("user_triggered", "true");
+                transaction.setData("test_timestamp", String.valueOf(System.currentTimeMillis()));
+                
+                // Simulate some processing time
+                Thread.sleep(100); // 100ms of simulated work
+                
+                logger.info("SENTRY_SPAN_COMPLETED: Span processing finished");
+                
+                Map<String, Object> response = new HashMap<>();
+                response.put("message", "Test span completed successfully");
+                response.put("transactionId", transaction.getEventId() != null ? transaction.getEventId().toString() : "unknown");
+                response.put("timestamp", System.currentTimeMillis());
+                response.put("processingTime", "100ms (simulated)");
+                response.put("sentryConfigured", true);
+                
+                return ResponseEntity.ok(response);
+                
+            } finally {
+                // Finish the transaction
+                transaction.finish();
+            }
+            
+        } catch (Exception e) {
+            logger.error("SENTRY_SPAN_ERROR: Failed to complete test span - {}", e.getMessage(), e);
+            Sentry.captureException(e);
+            
+            Map<String, String> error = new HashMap<>();
+            error.put("message", "Failed to complete test span: " + e.getMessage());
+            return ResponseEntity.status(500).body(error);
+        }
+    }
+    
+    @GetMapping("/sentry/status")
+    @Operation(summary = "Get Sentry configuration status", description = "Check if Sentry is properly configured and working")
+    @ApiResponse(responseCode = "200", description = "Sentry status retrieved successfully")
+    public ResponseEntity<?> getSentryStatus() {
+        try {
+            Map<String, Object> response = new HashMap<>();
+            
+            // Check if Sentry is initialized
+            boolean sentryInitialized = Sentry.isEnabled();
+            
+            response.put("sentryEnabled", sentryInitialized);
+            response.put("sentryConfigured", sentryInitialized);
+            response.put("timestamp", System.currentTimeMillis());
+            
+            if (sentryInitialized) {
+                response.put("message", "Sentry is properly configured and enabled");
+                response.put("status", "OK");
+                
+                // Add some configuration details (without sensitive info)
+                response.put("environment", "backend-spring-boot");
+                response.put("platform", "java");
+            } else {
+                response.put("message", "Sentry is not enabled or not configured");
+                response.put("status", "NOT_CONFIGURED");
+            }
+            
+            return ResponseEntity.ok(response);
+            
+        } catch (Exception e) {
+            logger.error("SENTRY_STATUS_ERROR: Failed to get Sentry status - {}", e.getMessage(), e);
+            Map<String, String> error = new HashMap<>();
+            error.put("message", "Failed to get Sentry status: " + e.getMessage());
+            return ResponseEntity.status(500).body(error);
+        }
+    }
+    
+    // ====================================
+    // ACHIEVEMENT MANAGEMENT ENDPOINTS
+    // ====================================
+    
+    @GetMapping("/achievements")
+    @Operation(summary = "Get all achievements", description = "Retrieve all achievements with optional filtering and pagination")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Achievements retrieved successfully"),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    public ResponseEntity<?> getAllAchievements(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false) String type,
+            @RequestParam(required = false) String rarity,
+            @RequestParam(required = false) Boolean completed) {
+        try {
+            logger.info("ADMIN_ACHIEVEMENTS: Getting all achievements - page: {}, size: {}, type: {}, rarity: {}, completed: {}", 
+                       page, size, type, rarity, completed);
+            
+            var achievements = achievementService.getAllAchievements(page, size, type, rarity, completed);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("achievements", achievements.getContent());
+            response.put("page", achievements.getNumber());
+            response.put("size", achievements.getSize());
+            response.put("totalElements", achievements.getTotalElements());
+            response.put("totalPages", achievements.getTotalPages());
+            response.put("isFirst", achievements.isFirst());
+            response.put("isLast", achievements.isLast());
+            response.put("timestamp", System.currentTimeMillis());
+            
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            logger.error("ADMIN_ACHIEVEMENTS_ERROR: Failed to get achievements - {}", e.getMessage(), e);
+            Map<String, String> error = new HashMap<>();
+            error.put("message", "Failed to retrieve achievements: " + e.getMessage());
+            return ResponseEntity.status(500).body(error);
+        }
+    }
+    
+    @GetMapping("/achievements/{id}")
+    @Operation(summary = "Get achievement by ID", description = "Retrieve a specific achievement by its ID")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Achievement found"),
+        @ApiResponse(responseCode = "404", description = "Achievement not found"),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    public ResponseEntity<?> getAchievementById(@PathVariable UUID id) {
+        try {
+            logger.info("ADMIN_ACHIEVEMENT_GET: Getting achievement by ID: {}", id);
+            
+            AchievementDTO achievement = achievementService.getAchievementById(id);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("achievement", achievement);
+            response.put("timestamp", System.currentTimeMillis());
+            
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            logger.error("ADMIN_ACHIEVEMENT_GET_ERROR: Failed to get achievement {} - {}", id, e.getMessage(), e);
+            Map<String, String> error = new HashMap<>();
+            error.put("message", "Failed to retrieve achievement: " + e.getMessage());
+            return ResponseEntity.status(500).body(error);
+        }
+    }
+    
+    @PostMapping("/achievements")
+    @Operation(summary = "Create achievement", description = "Create a new achievement")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "201", description = "Achievement created successfully"),
+        @ApiResponse(responseCode = "400", description = "Invalid input data"),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    public ResponseEntity<?> createAchievement(@Valid @RequestBody AchievementDTO achievementDTO) {
+        try {
+            logger.info("ADMIN_ACHIEVEMENT_CREATE: Creating new achievement: {}", achievementDTO.getDescription());
+            
+            AchievementDTO createdAchievement = achievementService.createAchievement(achievementDTO);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("achievement", createdAchievement);
+            response.put("message", "Achievement created successfully");
+            response.put("timestamp", System.currentTimeMillis());
+            
+            return ResponseEntity.status(201).body(response);
+        } catch (Exception e) {
+            logger.error("ADMIN_ACHIEVEMENT_CREATE_ERROR: Failed to create achievement - {}", e.getMessage(), e);
+            Map<String, String> error = new HashMap<>();
+            error.put("message", "Failed to create achievement: " + e.getMessage());
+            return ResponseEntity.status(500).body(error);
+        }
+    }
+    
+    @PutMapping("/achievements/{id}")
+    @Operation(summary = "Update achievement", description = "Update an existing achievement")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Achievement updated successfully"),
+        @ApiResponse(responseCode = "404", description = "Achievement not found"),
+        @ApiResponse(responseCode = "400", description = "Invalid input data"),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    public ResponseEntity<?> updateAchievement(@PathVariable UUID id, @Valid @RequestBody AchievementDTO achievementDTO) {
+        try {
+            logger.info("ADMIN_ACHIEVEMENT_UPDATE: Updating achievement: {}", id);
+            
+            AchievementDTO updatedAchievement = achievementService.updateAchievement(id, achievementDTO);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("achievement", updatedAchievement);
+            response.put("message", "Achievement updated successfully");
+            response.put("timestamp", System.currentTimeMillis());
+            
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            logger.error("ADMIN_ACHIEVEMENT_UPDATE_ERROR: Failed to update achievement {} - {}", id, e.getMessage(), e);
+            Map<String, String> error = new HashMap<>();
+            error.put("message", "Failed to update achievement: " + e.getMessage());
+            return ResponseEntity.status(500).body(error);
+        }
+    }
+    
+    @DeleteMapping("/achievements/{id}")
+    @Operation(summary = "Delete achievement", description = "Delete an achievement by ID")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Achievement deleted successfully"),
+        @ApiResponse(responseCode = "404", description = "Achievement not found"),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    public ResponseEntity<?> deleteAchievement(@PathVariable UUID id) {
+        try {
+            logger.info("ADMIN_ACHIEVEMENT_DELETE: Deleting achievement: {}", id);
+            
+            achievementService.deleteAchievement(id);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("message", "Achievement deleted successfully");
+            response.put("achievementId", id);
+            response.put("timestamp", System.currentTimeMillis());
+            
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            logger.error("ADMIN_ACHIEVEMENT_DELETE_ERROR: Failed to delete achievement {} - {}", id, e.getMessage(), e);
+            Map<String, String> error = new HashMap<>();
+            error.put("message", "Failed to delete achievement: " + e.getMessage());
+            return ResponseEntity.status(500).body(error);
+        }
+    }
+    
+    @PostMapping("/achievements/{id}/complete")
+    @Operation(summary = "Complete achievement", description = "Mark an achievement as completed")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Achievement completed successfully"),
+        @ApiResponse(responseCode = "404", description = "Achievement not found"),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    public ResponseEntity<?> completeAchievement(@PathVariable UUID id) {
+        try {
+            logger.info("ADMIN_ACHIEVEMENT_COMPLETE: Marking achievement as completed: {}", id);
+            
+            AchievementDTO completedAchievement = achievementService.completeAchievement(id);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("achievement", completedAchievement);
+            response.put("message", "Achievement marked as completed");
+            response.put("timestamp", System.currentTimeMillis());
+            
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            logger.error("ADMIN_ACHIEVEMENT_COMPLETE_ERROR: Failed to complete achievement {} - {}", id, e.getMessage(), e);
+            Map<String, String> error = new HashMap<>();
+            error.put("message", "Failed to complete achievement: " + e.getMessage());
+            return ResponseEntity.status(500).body(error);
+        }
+    }
+    
+    @DeleteMapping("/achievements/{id}/complete")
+    @Operation(summary = "Uncomplete achievement", description = "Mark an achievement as not completed")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Achievement uncompleted successfully"),
+        @ApiResponse(responseCode = "404", description = "Achievement not found"),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    public ResponseEntity<?> uncompleteAchievement(@PathVariable UUID id) {
+        try {
+            logger.info("ADMIN_ACHIEVEMENT_UNCOMPLETE: Marking achievement as not completed: {}", id);
+            
+            AchievementDTO uncompletedAchievement = achievementService.uncompleteAchievement(id);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("achievement", uncompletedAchievement);
+            response.put("message", "Achievement marked as not completed");
+            response.put("timestamp", System.currentTimeMillis());
+            
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            logger.error("ADMIN_ACHIEVEMENT_UNCOMPLETE_ERROR: Failed to uncomplete achievement {} - {}", id, e.getMessage(), e);
+            Map<String, String> error = new HashMap<>();
+            error.put("message", "Failed to uncomplete achievement: " + e.getMessage());
+            return ResponseEntity.status(500).body(error);
+        }
+    }
+    
+    @GetMapping("/achievements/stats")
+    @Operation(summary = "Get achievement statistics", description = "Get comprehensive achievement statistics")
+    @ApiResponse(responseCode = "200", description = "Achievement statistics retrieved successfully")
+    public ResponseEntity<?> getAchievementStats() {
+        try {
+            logger.info("ADMIN_ACHIEVEMENT_STATS: Getting achievement statistics");
+            
+            var stats = achievementService.getAchievementStatistics();
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("stats", stats);
+            response.put("timestamp", System.currentTimeMillis());
+            
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            logger.error("ADMIN_ACHIEVEMENT_STATS_ERROR: Failed to get achievement stats - {}", e.getMessage(), e);
+            Map<String, String> error = new HashMap<>();
+            error.put("message", "Failed to retrieve achievement statistics: " + e.getMessage());
+            return ResponseEntity.status(500).body(error);
+        }
+    }
+    
+    @PostMapping("/achievements/bulk-create")
+    @Operation(summary = "Bulk create achievements", description = "Create multiple achievements at once")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "201", description = "Achievements created successfully"),
+        @ApiResponse(responseCode = "400", description = "Invalid input data"),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    public ResponseEntity<?> bulkCreateAchievements(@Valid @RequestBody List<AchievementDTO> achievementDTOs) {
+        try {
+            logger.info("ADMIN_ACHIEVEMENT_BULK_CREATE: Creating {} achievements", achievementDTOs.size());
+            
+            List<AchievementDTO> createdAchievements = new ArrayList<>();
+            for (AchievementDTO achievementDTO : achievementDTOs) {
+                try {
+                    AchievementDTO created = achievementService.createAchievement(achievementDTO);
+                    createdAchievements.add(created);
+                } catch (Exception e) {
+                    logger.warn("Failed to create achievement '{}': {}", achievementDTO.getDescription(), e.getMessage());
+                }
+            }
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("achievements", createdAchievements);
+            response.put("totalRequested", achievementDTOs.size());
+            response.put("totalCreated", createdAchievements.size());
+            response.put("message", String.format("Successfully created %d out of %d achievements", 
+                                                 createdAchievements.size(), achievementDTOs.size()));
+            response.put("timestamp", System.currentTimeMillis());
+            
+            return ResponseEntity.status(201).body(response);
+        } catch (Exception e) {
+            logger.error("ADMIN_ACHIEVEMENT_BULK_CREATE_ERROR: Failed to bulk create achievements - {}", e.getMessage(), e);
+            Map<String, String> error = new HashMap<>();
+            error.put("message", "Failed to create achievements: " + e.getMessage());
+            return ResponseEntity.status(500).body(error);
+        }
+    }
+    
+    // ====================================
+    // ACHIEVEMENT REWARD MANAGEMENT ENDPOINTS
+    // ====================================
+    
+    @GetMapping("/achievements/{achievementId}/rewards")
+    @Operation(summary = "Get rewards for achievement", description = "Get all rewards for a specific achievement")
+    @ApiResponse(responseCode = "200", description = "Rewards retrieved successfully")
+    public ResponseEntity<?> getRewardsForAchievement(@PathVariable UUID achievementId) {
+        try {
+            logger.info("ADMIN_REWARDS_GET: Getting rewards for achievement: {}", achievementId);
+            
+            var rewards = rewardService.getRewardsForAchievement(achievementId);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("rewards", rewards);
+            response.put("count", rewards.size());
+            response.put("achievementId", achievementId);
+            response.put("timestamp", System.currentTimeMillis());
+            
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            logger.error("ADMIN_REWARDS_GET_ERROR: Failed to get rewards for achievement {} - {}", achievementId, e.getMessage(), e);
+            Map<String, String> error = new HashMap<>();
+            error.put("message", "Failed to retrieve rewards: " + e.getMessage());
+            return ResponseEntity.status(500).body(error);
+        }
+    }
+    
+    @PostMapping("/achievements/{achievementId}/rewards")
+    @Operation(summary = "Create reward for achievement", description = "Create a custom reward for an achievement")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "201", description = "Reward created successfully"),
+        @ApiResponse(responseCode = "400", description = "Invalid input data"),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    public ResponseEntity<?> createReward(@PathVariable UUID achievementId, @Valid @RequestBody AchievementRewardDTO rewardDTO) {
+        try {
+            logger.info("ADMIN_REWARD_CREATE: Creating reward for achievement: {}", achievementId);
+            
+            AchievementRewardDTO createdReward = rewardService.createReward(achievementId, rewardDTO);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("reward", createdReward);
+            response.put("message", "Reward created successfully");
+            response.put("achievementId", achievementId);
+            response.put("timestamp", System.currentTimeMillis());
+            
+            return ResponseEntity.status(201).body(response);
+        } catch (Exception e) {
+            logger.error("ADMIN_REWARD_CREATE_ERROR: Failed to create reward for achievement {} - {}", achievementId, e.getMessage(), e);
+            Map<String, String> error = new HashMap<>();
+            error.put("message", "Failed to create reward: " + e.getMessage());
+            return ResponseEntity.status(500).body(error);
+        }
+    }
+    
+    @PutMapping("/rewards/{rewardId}")
+    @Operation(summary = "Update reward", description = "Update an existing reward")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Reward updated successfully"),
+        @ApiResponse(responseCode = "404", description = "Reward not found"),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    public ResponseEntity<?> updateReward(@PathVariable UUID rewardId, @Valid @RequestBody AchievementRewardDTO rewardDTO) {
+        try {
+            logger.info("ADMIN_REWARD_UPDATE: Updating reward: {}", rewardId);
+            
+            AchievementRewardDTO updatedReward = rewardService.updateReward(rewardId, rewardDTO);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("reward", updatedReward);
+            response.put("message", "Reward updated successfully");
+            response.put("timestamp", System.currentTimeMillis());
+            
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            logger.error("ADMIN_REWARD_UPDATE_ERROR: Failed to update reward {} - {}", rewardId, e.getMessage(), e);
+            Map<String, String> error = new HashMap<>();
+            error.put("message", "Failed to update reward: " + e.getMessage());
+            return ResponseEntity.status(500).body(error);
+        }
+    }
+    
+    @DeleteMapping("/rewards/{rewardId}")
+    @Operation(summary = "Delete reward", description = "Delete a reward (soft delete)")
+    @ApiResponse(responseCode = "200", description = "Reward deleted successfully")
+    public ResponseEntity<?> deleteReward(@PathVariable UUID rewardId) {
+        try {
+            logger.info("ADMIN_REWARD_DELETE: Deleting reward: {}", rewardId);
+            
+            rewardService.deleteReward(rewardId);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("message", "Reward deleted successfully");
+            response.put("rewardId", rewardId);
+            response.put("timestamp", System.currentTimeMillis());
+            
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            logger.error("ADMIN_REWARD_DELETE_ERROR: Failed to delete reward {} - {}", rewardId, e.getMessage(), e);
+            Map<String, String> error = new HashMap<>();
+            error.put("message", "Failed to delete reward: " + e.getMessage());
+            return ResponseEntity.status(500).body(error);
+        }
+    }
+    
+    @PostMapping("/rewards/initialize")
+    @Operation(summary = "Initialize default rewards", description = "Initialize default rewards for all achievements based on configuration")
+    @ApiResponse(responseCode = "200", description = "Default rewards initialized successfully")
+    public ResponseEntity<?> initializeDefaultRewards() {
+        try {
+            logger.info("ADMIN_REWARDS_INIT: Initializing default rewards");
+            
+            rewardService.initializeDefaultRewards();
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("message", "Default rewards initialized successfully");
+            response.put("timestamp", System.currentTimeMillis());
+            
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            logger.error("ADMIN_REWARDS_INIT_ERROR: Failed to initialize default rewards - {}", e.getMessage(), e);
+            Map<String, String> error = new HashMap<>();
+            error.put("message", "Failed to initialize default rewards: " + e.getMessage());
+            return ResponseEntity.status(500).body(error);
+        }
+    }
+    
+    @GetMapping("/rewards/statistics")
+    @Operation(summary = "Get reward statistics", description = "Get comprehensive reward system statistics")
+    @ApiResponse(responseCode = "200", description = "Reward statistics retrieved successfully")
+    public ResponseEntity<?> getRewardStatistics() {
+        try {
+            logger.info("ADMIN_REWARDS_STATS: Getting reward statistics");
+            
+            var stats = rewardService.getRewardStatistics();
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("statistics", stats);
+            response.put("timestamp", System.currentTimeMillis());
+            
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            logger.error("ADMIN_REWARDS_STATS_ERROR: Failed to get reward statistics - {}", e.getMessage(), e);
+            Map<String, String> error = new HashMap<>();
+            error.put("message", "Failed to retrieve reward statistics: " + e.getMessage());
+            return ResponseEntity.status(500).body(error);
+        }
+    }
+    
+    @GetMapping("/rewards/trait-options")
+    @Operation(summary = "Get trait options", description = "Get all available trait options organized by category")
+    @ApiResponse(responseCode = "200", description = "Trait options retrieved successfully")
+    public ResponseEntity<?> getTraitOptions() {
+        try {
+            logger.info("ADMIN_TRAITS: Getting trait options");
+            
+            var traitOptions = rewardService.getTraitOptions();
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("traitOptions", traitOptions);
+            response.put("timestamp", System.currentTimeMillis());
+            
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            logger.error("ADMIN_TRAITS_ERROR: Failed to get trait options - {}", e.getMessage(), e);
+            Map<String, String> error = new HashMap<>();
+            error.put("message", "Failed to retrieve trait options: " + e.getMessage());
+            return ResponseEntity.status(500).body(error);
+        }
+    }
+    
+    @PostMapping("/achievements/{achievementId}/apply-rewards")
+    @Operation(summary = "Apply rewards for completed achievement", description = "Apply all rewards when an achievement is completed")
+    @ApiResponse(responseCode = "200", description = "Rewards applied successfully")
+    public ResponseEntity<?> applyRewards(@PathVariable UUID achievementId) {
+        try {
+            logger.info("ADMIN_REWARDS_APPLY: Applying rewards for achievement: {}", achievementId);
+            
+            var appliedRewards = rewardService.applyRewardsForCompletion(achievementId);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("appliedRewards", appliedRewards);
+            response.put("count", appliedRewards.size());
+            response.put("message", "Rewards applied successfully");
+            response.put("achievementId", achievementId);
+            response.put("timestamp", System.currentTimeMillis());
+            
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            logger.error("ADMIN_REWARDS_APPLY_ERROR: Failed to apply rewards for achievement {} - {}", achievementId, e.getMessage(), e);
+            Map<String, String> error = new HashMap<>();
+            error.put("message", "Failed to apply rewards: " + e.getMessage());
+            return ResponseEntity.status(500).body(error);
+        }
+    }
+    
+    @PostMapping("/rewards/clear")
+    @Operation(summary = "Clear all achievement rewards", description = "Delete all existing achievement rewards (admin only)")
+    public ResponseEntity<?> clearAllRewards() {
+        try {
+            logger.info("ADMIN_REWARDS_CLEAR: Clearing all achievement rewards");
+            
+            rewardService.clearAllRewards();
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("message", "All achievement rewards cleared successfully");
+            response.put("timestamp", System.currentTimeMillis());
+            
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            logger.error("ADMIN_REWARDS_CLEAR_ERROR: Failed to clear rewards - {}", e.getMessage(), e);
+            Map<String, String> error = new HashMap<>();
+            error.put("message", "Failed to clear rewards: " + e.getMessage());
+            return ResponseEntity.status(500).body(error);
+        }
+    }
+    
+    @PostMapping("/rewards/reset")
+    @Operation(summary = "Clear and reinitialize achievement rewards", description = "Clear all existing rewards and reinitialize with current configuration")
+    public ResponseEntity<?> resetRewards() {
+        try {
+            logger.info("ADMIN_REWARDS_RESET: Clearing and reinitializing all achievement rewards");
+            
+            // Clear existing rewards
+            rewardService.clearAllRewards();
+            logger.info("ADMIN_REWARDS_RESET: Cleared existing rewards");
+            
+            // Reinitialize with current configuration
+            rewardService.initializeDefaultRewards();
+            logger.info("ADMIN_REWARDS_RESET: Reinitialized rewards with current configuration");
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("message", "Achievement rewards reset and reinitialized successfully");
+            response.put("timestamp", System.currentTimeMillis());
+            
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            logger.error("ADMIN_REWARDS_RESET_ERROR: Failed to reset rewards - {}", e.getMessage(), e);
+            Map<String, String> error = new HashMap<>();
+            error.put("message", "Failed to reset rewards: " + e.getMessage());
+            return ResponseEntity.status(500).body(error);
+        }
+    }
+    
+    // ===================== INBOX MANAGEMENT ENDPOINTS =====================
+    
+    @GetMapping("/inbox/requests")
+    @Operation(summary = "Get pending achievement requests", description = "Retrieve all pending achievement completion requests for admin review")
+    public ResponseEntity<?> getPendingRequests() {
+        try {
+            logger.info("ADMIN_INBOX_REQUESTS: Getting all pending achievement requests");
+            
+            var requests = inboxService.getAllPendingRequests();
+            var requestDTOs = requests.stream()
+                    .map(this::convertRequestToDTO)
+                    .collect(Collectors.toList());
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("requests", requestDTOs);
+            response.put("count", requestDTOs.size());
+            response.put("timestamp", System.currentTimeMillis());
+            
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            logger.error("ADMIN_INBOX_REQUESTS_ERROR: Failed to get pending requests - {}", e.getMessage(), e);
+            Map<String, String> error = new HashMap<>();
+            error.put("message", "Failed to retrieve requests: " + e.getMessage());
+            return ResponseEntity.status(500).body(error);
+        }
+    }
+    
+    @PostMapping("/inbox/requests/{requestId}/approve")
+    @Operation(summary = "Approve achievement request", description = "Approve a pending achievement completion request")
+    public ResponseEntity<?> approveRequest(@PathVariable UUID requestId, @RequestBody Map<String, String> requestBody) {
+        try {
+            String adminNotes = requestBody.getOrDefault("adminNotes", "");
+            String adminUserId = "admin"; // TODO: Get from security context
+            
+            logger.info("ADMIN_INBOX_APPROVE: Approving request {} by admin {}", requestId, adminUserId);
+            
+            var approvedRequest = inboxService.approveRequest(requestId, adminUserId, adminNotes);
+            var requestDTO = convertRequestToDTO(approvedRequest);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("request", requestDTO);
+            response.put("message", "Achievement request approved successfully");
+            response.put("timestamp", System.currentTimeMillis());
+            
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            logger.error("ADMIN_INBOX_APPROVE_ERROR: Failed to approve request {} - {}", requestId, e.getMessage(), e);
+            Map<String, String> error = new HashMap<>();
+            error.put("message", "Failed to approve request: " + e.getMessage());
+            return ResponseEntity.status(500).body(error);
+        }
+    }
+    
+    @PostMapping("/inbox/requests/{requestId}/reject")
+    @Operation(summary = "Reject achievement request", description = "Reject a pending achievement completion request")
+    public ResponseEntity<?> rejectRequest(@PathVariable UUID requestId, @RequestBody Map<String, String> requestBody) {
+        try {
+            String adminNotes = requestBody.getOrDefault("adminNotes", "");
+            String adminUserId = "admin"; // TODO: Get from security context
+            
+            logger.info("ADMIN_INBOX_REJECT: Rejecting request {} by admin {}", requestId, adminUserId);
+            
+            var rejectedRequest = inboxService.rejectRequest(requestId, adminUserId, adminNotes);
+            var requestDTO = convertRequestToDTO(rejectedRequest);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("request", requestDTO);
+            response.put("message", "Achievement request rejected");
+            response.put("timestamp", System.currentTimeMillis());
+            
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            logger.error("ADMIN_INBOX_REJECT_ERROR: Failed to reject request {} - {}", requestId, e.getMessage(), e);
+            Map<String, String> error = new HashMap<>();
+            error.put("message", "Failed to reject request: " + e.getMessage());
+            return ResponseEntity.status(500).body(error);
+        }
+    }
+    
+    @GetMapping("/inbox/statistics")
+    @Operation(summary = "Get inbox statistics", description = "Get statistics about achievement requests")
+    public ResponseEntity<?> getInboxStatistics() {
+        try {
+            logger.info("ADMIN_INBOX_STATS: Getting inbox statistics");
+            
+            var stats = inboxService.getInboxStatistics();
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("statistics", stats);
+            response.put("timestamp", System.currentTimeMillis());
+            
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            logger.error("ADMIN_INBOX_STATS_ERROR: Failed to get inbox statistics - {}", e.getMessage(), e);
+            Map<String, String> error = new HashMap<>();
+            error.put("message", "Failed to get statistics: " + e.getMessage());
+            return ResponseEntity.status(500).body(error);
+        }
+    }
+    
+    private AchievementRequestDTO convertRequestToDTO(com.footballdynasty.entity.AchievementRequest request) {
+        AchievementRequestDTO dto = new AchievementRequestDTO();
+        dto.setId(request.getId());
+        dto.setAchievementId(request.getAchievement().getId());
+        dto.setAchievementDescription(request.getAchievement().getDescription());
+        dto.setAchievementRarity(request.getAchievement().getRarity().toString());
+        dto.setUserId(request.getUserId());
+        dto.setUserDisplayName(request.getUserDisplayName());
+        dto.setTeamId(request.getTeamId());
+        dto.setTeamName(request.getTeamName());
+        dto.setStatus(request.getStatus());
+        dto.setRequestReason(request.getRequestReason());
+        dto.setAdminNotes(request.getAdminNotes());
+        dto.setReviewedBy(request.getReviewedBy());
+        dto.setReviewedAt(request.getReviewedAt());
+        dto.setCreatedAt(request.getCreatedAt());
+        dto.setUpdatedAt(request.getUpdatedAt());
+        dto.generateDisplayInfo();
+        
+        return dto;
+    }
+    
+    @PostMapping("/users/{username}/promote")
+    @Operation(summary = "Promote user to commissioner", description = "Promote a user to commissioner role for testing purposes")
+    public ResponseEntity<?> promoteUserToCommissioner(@PathVariable String username) {
+        try {
+            logger.info("ADMIN_PROMOTE_USER: Promoting user {} to commissioner", username);
+            
+            Optional<User> userOptional = userRepository.findByUsername(username);
+            if (userOptional.isEmpty()) {
+                Map<String, String> error = new HashMap<>();
+                error.put("message", "User not found: " + username);
+                return ResponseEntity.notFound().build();
+            }
+            
+            User user = userOptional.get();
+            user.addRole(Role.COMMISSIONER);
+            user = userRepository.save(user);
+            
+            UserDTO userDTO = userMapper.toDTO(user);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("user", userDTO);
+            response.put("message", "User " + username + " promoted to commissioner");
+            response.put("timestamp", System.currentTimeMillis());
+            
+            logger.info("ADMIN_PROMOTE_USER_SUCCESS: User {} promoted to commissioner", username);
+            return ResponseEntity.ok(response);
+            
+        } catch (Exception e) {
+            logger.error("ADMIN_PROMOTE_USER_ERROR: Failed to promote user {} - {}", username, e.getMessage(), e);
+            Map<String, String> error = new HashMap<>();
+            error.put("message", "Failed to promote user: " + e.getMessage());
+            return ResponseEntity.status(500).body(error);
         }
     }
 }
