@@ -28,9 +28,7 @@ logging:
     org.hibernate.SQL: DEBUG
     org.hibernate.type.descriptor.sql.BasicBinder: TRACE
 
-server:
-  servlet:
-    context-path: /api/v2
+# No context-path needed for tests
 
 sentry:
   enabled: false

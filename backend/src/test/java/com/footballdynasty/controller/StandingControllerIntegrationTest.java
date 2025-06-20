@@ -76,7 +76,11 @@ class StandingControllerIntegrationTest {
     @Test
     @WithMockUser
     void testGetAllStandings() throws Exception {
-        mockMvc.perform(get("/api/v2/standings"))
+        mockMvc.perform(get("/standings"))
+                .andDo(result -> {
+                    System.out.println("Response status: " + result.getResponse().getStatus());
+                    System.out.println("Response body: " + result.getResponse().getContentAsString());
+                })
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content", hasSize(1)))
                 .andExpect(jsonPath("$.content[0].id", is(testStanding.getId().toString())))
@@ -88,7 +92,7 @@ class StandingControllerIntegrationTest {
     @Test
     @WithMockUser
     void testGetAllStandingsWithYearFilter() throws Exception {
-        mockMvc.perform(get("/api/v2/standings")
+        mockMvc.perform(get("/standings")
                         .param("year", "2024"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content", hasSize(1)))
@@ -98,7 +102,7 @@ class StandingControllerIntegrationTest {
     @Test
     @WithMockUser
     void testGetAllStandingsWithConferenceFilter() throws Exception {
-        mockMvc.perform(get("/api/v2/standings")
+        mockMvc.perform(get("/standings")
                         .param("conference", "ACC"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content", hasSize(1)))
@@ -108,7 +112,7 @@ class StandingControllerIntegrationTest {
     @Test
     @WithMockUser
     void testGetAllStandingsWithYearAndConferenceFilter() throws Exception {
-        mockMvc.perform(get("/api/v2/standings")
+        mockMvc.perform(get("/standings")
                         .param("year", "2024")
                         .param("conference", "ACC"))
                 .andExpect(status().isOk())
@@ -118,7 +122,7 @@ class StandingControllerIntegrationTest {
     @Test
     @WithMockUser
     void testGetStandingById() throws Exception {
-        mockMvc.perform(get("/api/v2/standings/{id}", testStanding.getId()))
+        mockMvc.perform(get("/standings/{id}", testStanding.getId()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id", is(testStanding.getId().toString())))
                 .andExpect(jsonPath("$.year", is(2024)))
@@ -131,14 +135,14 @@ class StandingControllerIntegrationTest {
     @WithMockUser
     void testGetStandingByIdNotFound() throws Exception {
         UUID nonExistentId = UUID.randomUUID();
-        mockMvc.perform(get("/api/v2/standings/{id}", nonExistentId))
+        mockMvc.perform(get("/standings/{id}", nonExistentId))
                 .andExpect(status().isNotFound());
     }
 
     @Test
     @WithMockUser
     void testGetStandingsByTeam() throws Exception {
-        mockMvc.perform(get("/api/v2/standings/team/{teamId}", testTeam.getId()))
+        mockMvc.perform(get("/standings/team/{teamId}", testTeam.getId()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content", hasSize(1)))
                 .andExpect(jsonPath("$.content[0].team.id", is(testTeam.getId().toString())));
@@ -148,7 +152,7 @@ class StandingControllerIntegrationTest {
     @WithMockUser
     void testGetStandingsByTeamNotFound() throws Exception {
         UUID nonExistentTeamId = UUID.randomUUID();
-        mockMvc.perform(get("/api/v2/standings/team/{teamId}", nonExistentTeamId))
+        mockMvc.perform(get("/standings/team/{teamId}", nonExistentTeamId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content", hasSize(0)));
     }
@@ -156,7 +160,7 @@ class StandingControllerIntegrationTest {
     @Test
     @WithMockUser
     void testGetStandingByTeamAndYear() throws Exception {
-        mockMvc.perform(get("/api/v2/standings/team/{teamId}/year/{year}", testTeam.getId(), 2024))
+        mockMvc.perform(get("/standings/team/{teamId}/year/{year}", testTeam.getId(), 2024))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.team.id", is(testTeam.getId().toString())))
                 .andExpect(jsonPath("$.year", is(2024)));
@@ -165,14 +169,14 @@ class StandingControllerIntegrationTest {
     @Test
     @WithMockUser
     void testGetStandingByTeamAndYearNotFound() throws Exception {
-        mockMvc.perform(get("/api/v2/standings/team/{teamId}/year/{year}", testTeam.getId(), 2023))
+        mockMvc.perform(get("/standings/team/{teamId}/year/{year}", testTeam.getId(), 2023))
                 .andExpect(status().isNotFound());
     }
 
     @Test
     @WithMockUser
     void testGetConferenceStandings() throws Exception {
-        mockMvc.perform(get("/api/v2/standings/conference/{conference}/year/{year}", "ACC", 2024))
+        mockMvc.perform(get("/standings/conference/{conference}/year/{year}", "ACC", 2024))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(1)))
                 .andExpect(jsonPath("$[0].team.conference", is("ACC")))
@@ -182,7 +186,7 @@ class StandingControllerIntegrationTest {
     @Test
     @WithMockUser
     void testGetTopRankedTeams() throws Exception {
-        mockMvc.perform(get("/api/v2/standings/ranked/year/{year}", 2024)
+        mockMvc.perform(get("/standings/ranked/year/{year}", 2024)
                         .param("limit", "25"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(1)))
@@ -192,7 +196,7 @@ class StandingControllerIntegrationTest {
     @Test
     @WithMockUser
     void testGetTeamsReceivingVotes() throws Exception {
-        mockMvc.perform(get("/api/v2/standings/votes/year/{year}", 2024))
+        mockMvc.perform(get("/standings/votes/year/{year}", 2024))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(1)))
                 .andExpect(jsonPath("$[0].votes", is(25)));
@@ -221,7 +225,7 @@ class StandingControllerIntegrationTest {
         createDTO.setConferenceRank(1);
         createDTO.setReceivingVotes(150);
 
-        mockMvc.perform(post("/api/v2/standings")
+        mockMvc.perform(post("/standings")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(createDTO)))
                 .andExpect(status().isCreated())
@@ -237,7 +241,7 @@ class StandingControllerIntegrationTest {
         StandingCreateDTO invalidDTO = new StandingCreateDTO();
         // Missing required fields
 
-        mockMvc.perform(post("/api/v2/standings")
+        mockMvc.perform(post("/standings")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(invalidDTO)))
                 .andExpect(status().isBadRequest());
@@ -256,7 +260,7 @@ class StandingControllerIntegrationTest {
         updateDTO.setConferenceRank(2);
         updateDTO.setReceivingVotes(50);
 
-        mockMvc.perform(put("/api/v2/standings/{id}", testStanding.getId())
+        mockMvc.perform(put("/standings/{id}", testStanding.getId())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(updateDTO)))
                 .andExpect(status().isOk())
@@ -272,7 +276,7 @@ class StandingControllerIntegrationTest {
         StandingUpdateDTO updateDTO = new StandingUpdateDTO();
         updateDTO.setWins(9);
 
-        mockMvc.perform(put("/api/v2/standings/{id}", nonExistentId)
+        mockMvc.perform(put("/standings/{id}", nonExistentId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(updateDTO)))
                 .andExpect(status().isNotFound());
@@ -281,11 +285,11 @@ class StandingControllerIntegrationTest {
     @Test
     @WithMockUser
     void testDeleteStanding() throws Exception {
-        mockMvc.perform(delete("/api/v2/standings/{id}", testStanding.getId()))
+        mockMvc.perform(delete("/standings/{id}", testStanding.getId()))
                 .andExpect(status().isNoContent());
 
         // Verify deletion
-        mockMvc.perform(get("/api/v2/standings/{id}", testStanding.getId()))
+        mockMvc.perform(get("/standings/{id}", testStanding.getId()))
                 .andExpect(status().isNotFound());
     }
 
@@ -293,14 +297,14 @@ class StandingControllerIntegrationTest {
     @WithMockUser
     void testDeleteStandingNotFound() throws Exception {
         UUID nonExistentId = UUID.randomUUID();
-        mockMvc.perform(delete("/api/v2/standings/{id}", nonExistentId))
+        mockMvc.perform(delete("/standings/{id}", nonExistentId))
                 .andExpect(status().isNotFound());
     }
 
     @Test
     @WithMockUser
     void testCalculateStandings() throws Exception {
-        mockMvc.perform(post("/api/v2/standings/calculate/{year}", 2024))
+        mockMvc.perform(post("/standings/calculate/{year}", 2024))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.message", containsString("successfully")))
                 .andExpect(jsonPath("$.year", is(2024)))
@@ -310,7 +314,7 @@ class StandingControllerIntegrationTest {
     @Test
     @WithMockUser
     void testCalculateConferenceStandings() throws Exception {
-        mockMvc.perform(post("/api/v2/standings/calculate/conference/{conference}/year/{year}", "ACC", 2024))
+        mockMvc.perform(post("/standings/calculate/conference/{conference}/year/{year}", "ACC", 2024))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.message", containsString("successfully")))
                 .andExpect(jsonPath("$.conference", is("ACC")))
@@ -344,7 +348,7 @@ class StandingControllerIntegrationTest {
         }
 
         // Test first page
-        mockMvc.perform(get("/api/v2/standings")
+        mockMvc.perform(get("/standings")
                         .param("page", "0")
                         .param("size", "5"))
                 .andExpect(status().isOk())
@@ -355,7 +359,7 @@ class StandingControllerIntegrationTest {
                 .andExpect(jsonPath("$.last", is(false)));
 
         // Test second page
-        mockMvc.perform(get("/api/v2/standings")
+        mockMvc.perform(get("/standings")
                         .param("page", "1")
                         .param("size", "5"))
                 .andExpect(status().isOk())
