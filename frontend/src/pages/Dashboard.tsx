@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Grid,
   Typography,
@@ -19,11 +19,27 @@ import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import GlassCard from '../components/ui/GlassCard';
 import GradientButton from '../components/ui/GradientButton';
+import GameDetailModal from '../components/ui/GameDetailModal';
 import api, { teamApi, gameApi, standingsApi, conferenceStandingsApi, conferenceChampionshipApi } from '../services/api';
 import { useAuth } from '../hooks/useAuth';
+import { Game } from '../types';
 
 const Dashboard: React.FC = () => {
   const { selectedTeam, user } = useAuth();
+  
+  // Modal state for game details
+  const [selectedGame, setSelectedGame] = useState<Game | null>(null);
+  const [isGameModalOpen, setIsGameModalOpen] = useState(false);
+
+  const handleGameDetailsClick = (game: Game) => {
+    setSelectedGame(game);
+    setIsGameModalOpen(true);
+  };
+
+  const handleGameModalClose = () => {
+    setIsGameModalOpen(false);
+    setSelectedGame(null);
+  };
 
   // API Queries - now using the selected team
   const { data: recentGamesData, isLoading: recentGamesLoading } = useQuery({
@@ -180,18 +196,6 @@ const Dashboard: React.FC = () => {
   const displayedUpcomingGames = 2;
   const hiddenGamesCount = Math.max(0, totalUpcomingGames - displayedUpcomingGames);
   
-  const upcomingGames = (upcomingGamesData || []).slice(0, displayedUpcomingGames).map((game: any) => {
-    const isHome = game.homeTeamId === selectedTeam?.id;
-    const opponent = isHome ? game.awayTeamName : game.homeTeamName;
-    const opponentRank = isHome ? game.awayTeamRank : game.homeTeamRank;
-    
-    return {
-      opponent: opponent || 'Unknown',
-      date: game.date ? format(new Date(game.date), 'MMM d') : 'TBD',
-      time: game.date ? format(new Date(game.date), 'h:mm a') : 'TBD',
-      rank: opponentRank ? `#${opponentRank}` : 'NR',
-    };
-  }).filter(Boolean);
 
   // Calculate season progress metrics
   const totalGames = userStanding ? userStanding.totalGames : 0;
@@ -355,13 +359,24 @@ const Dashboard: React.FC = () => {
                   <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
                     <CircularProgress />
                   </Box>
-                ) : upcomingGames.length === 0 ? (
+                ) : (upcomingGamesData || []).length === 0 ? (
                   <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 4 }}>
                     No upcoming games scheduled
                   </Typography>
                 ) : (
                   <>
-                    {upcomingGames.map((game: any, index: number) => (
+                    {(upcomingGamesData || []).slice(0, displayedUpcomingGames).map((game: any, index: number) => {
+                      const isHome = game.homeTeamId === selectedTeam?.id;
+                      const opponent = isHome ? game.awayTeamName : game.homeTeamName;
+                      const opponentRank = isHome ? game.awayTeamRank : game.homeTeamRank;
+                      const displayGame = {
+                        opponent: opponent || 'Unknown',
+                        date: game.date ? format(new Date(game.date), 'MMM d') : 'TBD',
+                        time: game.date ? format(new Date(game.date), 'h:mm a') : 'TBD',
+                        rank: opponentRank ? `#${opponentRank}` : 'NR',
+                      };
+                      
+                      return (
                       <Box
                         key={index}
                         sx={{
@@ -376,10 +391,10 @@ const Dashboard: React.FC = () => {
                           <Box>
                             <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                               <Typography variant="h6" sx={{ fontWeight: 600, mr: 1 }}>
-                                vs {game.opponent}
+                                vs {displayGame.opponent}
                               </Typography>
                               <Chip
-                                label={game.rank}
+                                label={displayGame.rank}
                                 size="small"
                                 sx={{
                                   background: 'linear-gradient(135deg, #ff9800, #ffb74d)',
@@ -389,15 +404,19 @@ const Dashboard: React.FC = () => {
                               />
                             </Box>
                             <Typography variant="body2" color="text.secondary">
-                              {game.date} • {game.time}
+                              {displayGame.date} • {displayGame.time}
                             </Typography>
                           </Box>
-                          <GradientButton size="small">
+                          <GradientButton 
+                            size="small"
+                            onClick={() => handleGameDetailsClick(game)}
+                          >
                             View Details
                           </GradientButton>
                         </Box>
                       </Box>
-                    ))}
+                      );
+                    })}
                     {hiddenGamesCount > 0 && (
                       <Box sx={{ 
                         textAlign: 'center', 
@@ -612,6 +631,13 @@ const Dashboard: React.FC = () => {
           </Grid>
         )}
       </Grid>
+
+      {/* Game Detail Modal */}
+      <GameDetailModal
+        open={isGameModalOpen}
+        onClose={handleGameModalClose}
+        game={selectedGame}
+      />
     </motion.div>
   );
 };

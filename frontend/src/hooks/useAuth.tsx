@@ -27,6 +27,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         if (storedTeam) {
           const teamData = JSON.parse(storedTeam);
           setSelectedTeam(teamData);
+          
+          // If team is not marked as human but user has it selected, fix this
+          if (teamData && !teamData.isHuman && userData.selectedTeamId) {
+            console.log('🔄 Detected team not marked as human, calling selectTeam to fix...');
+            authApi.selectTeam(teamData.id)
+              .then(response => {
+                console.log('✅ Fixed team human status:', response.data.team.name);
+                const updatedTeam = response.data.team;
+                localStorage.setItem('selected_team', JSON.stringify(updatedTeam));
+                setSelectedTeam(updatedTeam);
+              })
+              .catch(error => {
+                console.warn('⚠️ Could not fix team human status:', error);
+              });
+          }
         }
       } catch (error) {
         console.error('Error parsing stored auth data:', error);
@@ -95,15 +110,37 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setSelectedTeam(null);
   };
 
-  const selectTeam = (team: Team): void => {
-    localStorage.setItem('selected_team', JSON.stringify(team));
-    setSelectedTeam(team);
-    
-    // Update user with selected team ID
-    if (user) {
-      const updatedUser = { ...user, selectedTeamId: team.id };
+  const selectTeam = async (team: Team): Promise<void> => {
+    try {
+      setIsLoading(true);
+      
+      // Call backend API to mark team as human-controlled
+      const response = await authApi.selectTeam(team.id);
+      const { user: updatedUser, team: updatedTeam } = response.data;
+      
+      // Update local state with backend response
+      localStorage.setItem('auth_token', localStorage.getItem('auth_token') || '');
       localStorage.setItem('user', JSON.stringify(updatedUser));
+      localStorage.setItem('selected_team', JSON.stringify(updatedTeam));
+      
       setUser(updatedUser);
+      setSelectedTeam(updatedTeam);
+      
+      console.log('✅ Team selection successful:', updatedTeam.name, 'isHuman:', updatedTeam.isHuman);
+    } catch (error) {
+      console.error('❌ Team selection failed:', error);
+      
+      // Fallback to local-only selection if API fails
+      localStorage.setItem('selected_team', JSON.stringify(team));
+      setSelectedTeam(team);
+      
+      if (user) {
+        const updatedUser = { ...user, selectedTeamId: team.id };
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+        setUser(updatedUser);
+      }
+    } finally {
+      setIsLoading(false);
     }
   };
 

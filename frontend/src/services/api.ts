@@ -1,6 +1,6 @@
 import axios from 'axios';
 import * as Sentry from '@sentry/react';
-import type { PaginatedResponse, Team, Game, Standing, Achievement, AchievementReward, AchievementCompletionResponse, LoginRequest, RegisterRequest, AuthResponse, StandingCreateRequest, StandingUpdateRequest, Notification, NotificationStats, AchievementRequest } from '../types';
+import type { PaginatedResponse, Team, Game, Standing, Achievement, AchievementReward, AchievementCompletionResponse, LoginRequest, RegisterRequest, AuthResponse, StandingCreateRequest, StandingUpdateRequest, Notification, NotificationStats, AchievementRequest, User } from '../types';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8080/api/v2';
 
@@ -279,6 +279,9 @@ export const authApi = {
   
   refreshToken: () =>
     api.post('/auth/refresh'),
+  
+  selectTeam: (teamId: string) =>
+    api.post<{ user: User; team: Team }>('/auth/select-team', { teamId }),
 };
 
 // Inbox API for admin achievement request management

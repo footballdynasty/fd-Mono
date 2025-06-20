@@ -92,7 +92,7 @@ const TeamSelection: React.FC = () => {
     
     setIsSubmitting(true);
     try {
-      selectTeam(selectedTeam);
+      await selectTeam(selectedTeam);
     } catch (error) {
       console.error('Error selecting team:', error);
     } finally {

@@ -213,7 +213,7 @@ export interface AuthContextType {
   login: (username: string, password: string) => Promise<void>;
   register: (username: string, password: string, email?: string) => Promise<void>;
   logout: () => void;
-  selectTeam: (team: Team) => void;
+  selectTeam: (team: Team) => Promise<void>;
 }
 
 export interface LoginRequest {

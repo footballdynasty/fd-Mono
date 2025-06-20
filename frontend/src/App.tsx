@@ -15,6 +15,7 @@ import StandingsPage from './pages/StandingsPage';
 import SchedulePage from './pages/SchedulePage';
 import AchievementsPage from './pages/AchievementsPage';
 import AdminInboxPage from './pages/AdminInboxPage';
+import TeamsPage from './pages/TeamsPage';
 import TeamSelection from './pages/auth/TeamSelection';
 import Debug from './pages/Debug';
 
@@ -61,7 +62,7 @@ const App: React.FC = () => {
                     <Route path="/schedule" element={<SchedulePage />} />
                     <Route path="/achievements" element={<AchievementsPage />} />
                     <Route path="/admin/inbox" element={<AdminInboxPage />} />
-                    <Route path="/teams" element={<div>Teams Page</div>} />
+                    <Route path="/teams" element={<TeamsPage />} />
                     <Route path="/settings" element={<div>Settings Page</div>} />
                     {/* Debug Routes */}
                     <Route path="/debug" element={<Debug />} />
