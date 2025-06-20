@@ -19,48 +19,45 @@ Object.defineProperty(window, 'matchMedia', {
   })),
 });
 
-// Mock framer-motion globally for all tests to avoid animation issues
-jest.mock('framer-motion', () => {
-  const React = require('react');
+// Mock framer-motion components to strip animation props
+const createMockMotionComponent = (element: string) => {
+  return ({ children, whileHover, initial, animate, exit, layout, variants, transition, ...props }: any) => {
+    const React = require('react');
+    return React.createElement(element, props, children);
+  };
+};
+
+jest.mock('framer-motion', () => ({
+  motion: {
+    div: createMockMotionComponent('div'),
+    tr: createMockMotionComponent('tr'),
+    span: createMockMotionComponent('span'),
+    button: createMockMotionComponent('button'),
+  },
+  AnimatePresence: ({ children }: any) => children,
+}));
+
+// Mock @mui/material useMediaQuery hook to always return false by default
+jest.mock('@mui/material', () => {
+  const originalModule = jest.requireActual('@mui/material');
   return {
-    motion: {
-      div: ({ children, whileHover, initial, animate, exit, layout, variants, transition, ...props }: any) => 
-        React.createElement('div', props, children),
-      tr: ({ children, whileHover, initial, animate, exit, layout, variants, transition, ...props }: any) => 
-        React.createElement('tr', props, children),
-      span: ({ children, whileHover, initial, animate, exit, layout, variants, transition, ...props }: any) => 
-        React.createElement('span', props, children),
-      button: ({ children, whileHover, initial, animate, exit, layout, variants, transition, ...props }: any) => 
-        React.createElement('button', props, children),
-    },
-    AnimatePresence: ({ children }: any) => children,
+    ...originalModule,
+    useMediaQuery: jest.fn(() => false),
   };
 });
 
 // Mock IntersectionObserver
 global.IntersectionObserver = class IntersectionObserver {
   constructor() {}
-  observe() {
-    return null;
-  }
-  disconnect() {
-    return null;
-  }
-  unobserve() {
-    return null;
-  }
+  observe() { return null; }
+  disconnect() { return null; }
+  unobserve() { return null; }
 };
 
 // Mock ResizeObserver
 global.ResizeObserver = class ResizeObserver {
   constructor() {}
-  observe() {
-    return null;
-  }
-  disconnect() {
-    return null;
-  }
-  unobserve() {
-    return null;
-  }
+  observe() { return null; }
+  disconnect() { return null; }
+  unobserve() { return null; }
 };
