@@ -1,5 +1,5 @@
 import React from 'react';
-import { Card, CardProps, alpha, useTheme, SxProps, Theme } from '@mui/material';
+import { Card, CardProps, alpha, SxProps, Theme } from '@mui/material';
 import { motion } from 'framer-motion';
 
 interface GlassCardProps extends CardProps {
@@ -15,8 +15,6 @@ const GlassCard: React.FC<GlassCardProps> = ({
   sx,
   ...props 
 }) => {
-  const theme = useTheme();
-
   const cardVariants = {
     initial: { scale: 1, y: 0 },
     hover: { 

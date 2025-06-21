@@ -8,9 +8,7 @@ import {
   Typography,
   Chip,
   Avatar,
-  Divider,
   Grid,
-  useTheme,
   alpha,
   LinearProgress,
 } from '@mui/material';
@@ -41,8 +39,6 @@ const TeamDetailModal: React.FC<TeamDetailModalProps> = ({
   onClose,
   team,
 }) => {
-  const theme = useTheme();
-
   if (!team) return null;
 
   // Calculate team statistics

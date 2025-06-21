@@ -3,7 +3,6 @@ import {
   Grid,
   Box,
   Typography,
-  CircularProgress,
   Alert,
   Skeleton,
 } from '@mui/material';

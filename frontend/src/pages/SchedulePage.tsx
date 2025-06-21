@@ -18,7 +18,6 @@ import { motion } from 'framer-motion';
 import { Link as RouterLink, useSearchParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useScheduleData, useWeekNavigation } from '../hooks/useSchedule';
-import GlassCard from '../components/ui/GlassCard';
 import WeekSchedule from '../components/schedule/WeekSchedule';
 import ScheduleFilters from '../components/schedule/ScheduleFilters';
 import PullToRefresh from '../components/schedule/PullToRefresh';

@@ -8,7 +8,6 @@ import {
   Tab,
   IconButton,
   Tooltip,
-  alpha,
 } from '@mui/material';
 import {
   EmojiEvents,

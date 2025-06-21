@@ -15,9 +15,7 @@ import {
   Avatar,
   useTheme,
   useMediaQuery,
-  alpha,
   IconButton,
-  Tooltip,
 } from '@mui/material';
 import {
   Person as PersonIcon,
@@ -112,11 +110,6 @@ const TeamsTable: React.FC<TeamsTableProps> = ({
         staggerChildren: loading ? 0 : 0.05
       }
     },
-  };
-
-  const rowVariants = {
-    initial: { opacity: 0, x: -20 },
-    animate: { opacity: 1, x: 0 },
   };
 
   // Simplified table row component for better performance

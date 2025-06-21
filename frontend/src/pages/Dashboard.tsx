@@ -12,7 +12,6 @@ import {
   SportsFootball,
   EmojiEvents,
   TrendingUp,
-  Schedule,
 } from '@mui/icons-material';
 import { motion } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
@@ -20,12 +19,12 @@ import { format } from 'date-fns';
 import GlassCard from '../components/ui/GlassCard';
 import GradientButton from '../components/ui/GradientButton';
 import GameDetailModal from '../components/ui/GameDetailModal';
-import api, { teamApi, gameApi, standingsApi, conferenceStandingsApi, conferenceChampionshipApi } from '../services/api';
+import { gameApi, conferenceStandingsApi, conferenceChampionshipApi } from '../services/api';
 import { useAuth } from '../hooks/useAuth';
 import { Game } from '../types';
 
 const Dashboard: React.FC = () => {
-  const { selectedTeam, user } = useAuth();
+  const { selectedTeam } = useAuth();
   
   // Modal state for game details
   const [selectedGame, setSelectedGame] = useState<Game | null>(null);
@@ -107,7 +106,6 @@ const Dashboard: React.FC = () => {
 
   // Calculate stats from API data using selected team
   const userStanding = standings?.find(s => s.team.id === selectedTeam?.id);
-  const nextGame = (upcomingGamesData || [])[0];
   
   const statCards = [
     {
@@ -198,10 +196,8 @@ const Dashboard: React.FC = () => {
   
 
   // Calculate season progress metrics
-  const totalGames = userStanding ? userStanding.totalGames : 0;
   const bowlEligible = (userStanding?.wins || 0) >= 6;
   const winPercentage = userStanding?.winPercentage || 0;
-  const currentRank = userStanding?.rank || 0;
   
   // Conference championship progress based on championship bid
   const championshipProgress = championshipBid ? {

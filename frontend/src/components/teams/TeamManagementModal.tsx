@@ -16,7 +16,6 @@ import {
   FormControlLabel,
   Button,
   Alert,
-  useTheme,
   alpha,
   Avatar,
   Grid,
@@ -27,7 +26,6 @@ import {
   Add,
   Edit,
   Delete,
-  CloudUpload,
 } from '@mui/icons-material';
 import { motion } from 'framer-motion';
 import { Team } from '../../types';
@@ -65,7 +63,6 @@ const TeamManagementModal: React.FC<TeamManagementModalProps> = ({
   onDelete,
   loading = false,
 }) => {
-  const theme = useTheme();
   const [formData, setFormData] = useState<TeamFormData>({
     name: '',
     coach: '',

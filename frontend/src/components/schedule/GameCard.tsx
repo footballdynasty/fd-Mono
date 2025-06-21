@@ -5,7 +5,6 @@ import {
   Chip,
   Avatar,
   useTheme,
-  useMediaQuery,
 } from '@mui/material';
 import { format, isToday, isTomorrow, isYesterday } from 'date-fns';
 import { motion } from 'framer-motion';

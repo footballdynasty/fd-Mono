@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { standingsApi } from '../services/api';
-import type { Standing, StandingCreateRequest, StandingUpdateRequest } from '../types';
+import type { StandingCreateRequest, StandingUpdateRequest } from '../types';
 
 // Query Keys
 export const standingsQueryKeys = {

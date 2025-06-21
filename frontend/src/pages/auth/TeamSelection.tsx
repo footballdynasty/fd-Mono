@@ -53,11 +53,11 @@ const TeamSelection: React.FC = () => {
   });
 
   // Extract data for use in useMemo
-  const allTeams = teamsData?.data?.content || [];
   const conferences = conferencesData?.data || [];
 
   // Filter and search teams - moved before early returns
   const filteredTeams = useMemo(() => {
+    const allTeams = teamsData?.data?.content || [];
     let filtered = allTeams;
 
     // Apply search filter
@@ -81,7 +81,7 @@ const TeamSelection: React.FC = () => {
     }
 
     return filtered;
-  }, [allTeams, searchTerm, selectedConference, showHumanOnly]);
+  }, [teamsData?.data?.content, searchTerm, selectedConference, showHumanOnly]);
 
   const handleTeamSelect = (team: Team) => {
     setSelectedTeam(team);

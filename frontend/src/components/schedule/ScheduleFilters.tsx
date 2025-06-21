@@ -68,7 +68,6 @@ const ScheduleFilters: React.FC<ScheduleFiltersProps> = ({
 }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  const isSmallMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const { selectedTeam } = useAuth();
   
   // Collapsible filters for mobile

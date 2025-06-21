@@ -8,9 +8,7 @@ import {
   Typography,
   Chip,
   Avatar,
-  Divider,
   Grid,
-  useTheme,
   alpha,
 } from '@mui/material';
 import {
@@ -36,8 +34,6 @@ const GameDetailModal: React.FC<GameDetailModalProps> = ({
   onClose,
   game,
 }) => {
-  const theme = useTheme();
-
   if (!game) return null;
 
   // Format game date and time with validation

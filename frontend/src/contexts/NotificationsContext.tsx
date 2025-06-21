@@ -32,7 +32,7 @@ interface NotificationsProviderProps {
 }
 
 export const NotificationsProvider: React.FC<NotificationsProviderProps> = ({ children }) => {
-  const { isAuthenticated, user, isCommissioner } = useAuth();
+  const { isAuthenticated, isCommissioner } = useAuth();
   const queryClient = useQueryClient();
   const [error, setError] = useState<string | null>(null);
 
